@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Human Design — Mini App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Raleway:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Палитра из лотоса */
+    --bg: #000000;
+    --bg-soft: #0A0612;
+    --bg-card: #14081F;
+    --bg-card-elev: #1C0E2B;
+    --purple-deep: #2D1B47;
+    --purple-mid: #3D2360;
+    --purple-glow: #5A3585;
+    --gold: #D4AC6B;
+    --gold-soft: #C9A05E;
+    --gold-bright: #E5C58A;
+    --gold-line: rgba(212, 172, 107, 0.35);
+    --gold-faint: rgba(212, 172, 107, 0.10);
+    --text: #F0E6D2;
+    --text-dim: #9C8B6F;
+    --text-soft: #C7B895;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: #000;
+    font-family: 'Raleway', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+    font-weight: 300;
+    letter-spacing: 0.2px;
+  }
+
+  /* Каркас телефона для демо */
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    background: var(--bg);
+    border-radius: 50px;
+    border: 10px solid #1c1c1e;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 60px rgba(90, 53, 133, 0.15);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Telegram header */
+  .tg-header {
+    background: #0A0612;
+    padding: 12px 16px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(212, 172, 107, 0.08);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  .tg-header .left { display: flex; align-items: center; gap: 10px; }
+  .tg-header .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--gold-bright), var(--purple-deep) 80%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    color: var(--gold-bright);
+    border: 1px solid var(--gold-line);
+  }
+  .tg-header .title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--gold-bright);
+    letter-spacing: 0.5px;
+  }
+  .tg-header .subtitle {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .tg-header .close {
+    color: var(--gold);
+    font-size: 13px;
+    background: none; border: none;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.5px;
+  }
+
+  /* Контент */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 18px 110px;
+    background:
+      radial-gradient(ellipse 600px 400px at 50% 0%, rgba(61, 35, 96, 0.45), transparent 70%),
+      radial-gradient(ellipse 400px 300px at 50% 30%, rgba(90, 53, 133, 0.18), transparent 70%),
+      var(--bg);
+  }
+
+  /* Hero с лотосом */
+  .hero {
+    text-align: center;
+    padding: 28px 0 24px;
+    position: relative;
+  }
+  .lotus-mark {
+    width: 84px;
+    height: 84px;
+    margin: 0 auto 18px;
+    display: block;
+    filter: drop-shadow(0 0 20px rgba(212, 172, 107, 0.25));
+  }
+  .hero h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 30px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    line-height: 1.15;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+  .hero h1 .accent {
+    color: var(--gold-bright);
+    font-style: italic;
+    font-weight: 500;
+  }
+  .hero .tagline {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 300;
+  }
+  .hero-divider {
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+    margin: 18px auto 0;
+  }
+
+  /* Карточка профиля */
+  .my-card {
+    background: linear-gradient(135deg, rgba(61, 35, 96, 0.5), rgba(45, 27, 71, 0.3));
+    border: 1px solid var(--gold-line);
+    border-radius: 20px;
+    padding: 18px;
+    margin: 4px 0 26px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .my-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+    opacity: 0.4;
+  }
+  .my-card .mini-bg {
+    width: 56px; height: 56px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid var(--gold-line);
+  }
+  .my-card .mini-bg svg { width: 36px; height: 50px; }
+  .my-card .info { flex: 1; min-width: 0; }
+  .my-card .label {
+    font-size: 9px;
+    color: var(--gold);
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-weight: 400;
+  }
+  .my-card .name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px;
+    font-weight: 500;
+    margin-bottom: 3px;
+    color: var(--text);
+    letter-spacing: 0.3px;
+  }
+  .my-card .meta {
+    font-size: 11px;
+    color: var(--text-soft);
+    letter-spacing: 0.5px;
+    font-weight: 300;
+  }
+  .my-card .arrow {
+    color: var(--gold-bright);
+    font-size: 22px;
+    font-weight: 200;
+  }
+
+  /* Section header с орнаментом */
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 28px 0 14px;
+    text-align: center;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .section-title::before,
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+    max-width: 60px;
+  }
+
+  /* Прогноз дня */
+  .daily {
+    background:
+      radial-gradient(ellipse at top right, rgba(90, 53, 133, 0.4), transparent 60%),
+      linear-gradient(135deg, rgba(20, 8, 31, 0.9), rgba(10, 6, 18, 0.9));
+    border: 1px solid var(--gold-line);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .daily::before {
+    content: '✦';
+    position: absolute;
+    top: 12px; right: 16px;
+    color: var(--gold);
+    font-size: 14px;
+    opacity: 0.5;
+  }
+  .daily .date {
+    font-size: 10px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    margin-bottom: 12px;
+    font-weight: 400;
+  }
+  .daily .quote {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-style: italic;
+    font-weight: 300;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .daily .more {
+    font-size: 11px;
+    color: var(--gold-bright);
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  /* Продукты */
+  .products {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .product {
+    background: rgba(20, 8, 31, 0.6);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid rgba(212, 172, 107, 0.08);
+    position: relative;
+  }
+  .product:active {
+    background: rgba(28, 14, 43, 0.8);
+    border-color: var(--gold-line);
+  }
+  .product .icon {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    background: radial-gradient(circle at 30% 30%, rgba(90, 53, 133, 0.6), rgba(45, 27, 71, 0.4));
+    border: 1px solid var(--gold-line);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .product .body { flex: 1; min-width: 0; }
+  .product .name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--text);
+    letter-spacing: 0.3px;
+  }
+  .product .desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.45;
+    font-weight: 300;
+    letter-spacing: 0.3px;
+  }
+  .product .right {
+    display: flex; flex-direction: column;
+    align-items: flex-end; gap: 2px;
+    flex-shrink: 0;
+  }
+  .product .price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--gold-bright);
+    letter-spacing: 0.5px;
+  }
+
+  .product.featured {
+    background:
+      radial-gradient(ellipse at top, rgba(90, 53, 133, 0.4), transparent 60%),
+      rgba(28, 14, 43, 0.8);
+    border-color: var(--gold-line);
+  }
+  .product.featured .badge {
+    position: absolute;
+    top: -8px; right: 14px;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold-soft));
+    color: #1C0E2B;
+    font-size: 9px;
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* Кнопки */
+  .actions {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .btn {
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold-soft));
+    color: #14081F;
+    border: none;
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: inherit;
+    box-shadow: 0 8px 24px rgba(212, 172, 107, 0.15);
+  }
+  .btn.secondary {
+    background: transparent;
+    color: var(--gold-bright);
+    border: 1px solid var(--gold-line);
+    box-shadow: none;
+  }
+
+  /* Bottom nav */
+  .tabs {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(10, 6, 18, 0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(212, 172, 107, 0.12);
+    display: flex;
+    padding: 10px 0 22px;
+    justify-content: space-around;
+  }
+  .tab {
+    background: none; border: none;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    color: var(--text-dim);
+    font-size: 9px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+  .tab.active { color: var(--gold-bright); }
+  .tab .ico { font-size: 18px; line-height: 1; opacity: 0.85;}
+  .tab.active .ico { opacity: 1; }
+
+  /* Подсказка вне фрейма */
+  .demo-note {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(212, 172, 107, 0.08);
+    color: var(--gold);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 11px;
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    border: 1px solid var(--gold-line);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+
+  .content::-webkit-scrollbar { width: 0; }
+
+  @media (max-width: 430px) {
+    body { padding: 0; align-items: stretch; }
+    .phone-frame {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+    }
+    .demo-note { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-note">внутри Telegram</div>
+
+<div class="phone-frame">
+
+  <div class="tg-header">
+    <div class="left">
+      <div class="avatar">✦</div>
+      <div>
+        <div class="title">Human Design</div>
+        <div class="subtitle">Мини-приложение</div>
+      </div>
+    </div>
+    <button class="close">Закрыть</button>
+  </div>
+
+  <div class="content">
+
+    <!-- Hero с лотосом -->
+    <div class="hero">
+      <!-- Стилизованный лотос-мандала -->
+      <svg class="lotus-mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="petalGrad" cx="50%" cy="50%">
+            <stop offset="0%" stop-color="#3D2360" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#2D1B47" stop-opacity="0.7"/>
+          </radialGradient>
+          <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#E5C58A"/>
+            <stop offset="100%" stop-color="#C9A05E"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Внешний круг -->
+        <circle cx="50" cy="50" r="48" fill="url(#petalGrad)" stroke="url(#goldGrad)" stroke-width="0.8"/>
+
+        <!-- Лепестки лотоса (упрощённо) -->
+        <g stroke="url(#goldGrad)" stroke-width="0.6" fill="none">
+          <!-- Верхние лепестки -->
+          <path d="M50 8 Q42 28 50 42 Q58 28 50 8 Z"/>
+          <path d="M30 14 Q32 34 46 44 Q42 26 30 14 Z"/>
+          <path d="M70 14 Q68 34 54 44 Q58 26 70 14 Z"/>
+          <!-- Боковые -->
+          <path d="M14 35 Q30 38 42 50 Q26 44 14 35 Z"/>
+          <path d="M86 35 Q70 38 58 50 Q74 44 86 35 Z"/>
+          <!-- Нижние -->
+          <path d="M22 60 Q34 56 44 60 Q34 70 22 60 Z"/>
+          <path d="M78 60 Q66 56 56 60 Q66 70 78 60 Z"/>
+          <path d="M50 92 Q44 78 50 68 Q56 78 50 92 Z"/>
+        </g>
+
+        <!-- Центральная мандала бодиграфа -->
+        <g stroke="url(#goldGrad)" stroke-width="0.8" fill="none">
+          <ellipse cx="50" cy="50" rx="14" ry="18" stroke-width="1"/>
+          <polygon points="50,38 60,50 50,62 40,50" stroke-width="0.7"/>
+          <line x1="50" y1="32" x2="50" y2="38"/>
+          <polygon points="48,32 52,32 50,30" fill="url(#goldGrad)"/>
+          <rect x="46" y="58" width="3" height="3" fill="url(#goldGrad)"/>
+          <rect x="51" y="58" width="3" height="3" fill="url(#goldGrad)"/>
+          <circle cx="50" cy="50" r="2.5" fill="url(#goldGrad)"/>
+        </g>
+      </svg>
+
+      <h1>Твой <span class="accent">Дизайн.</span><br>Каждый день рядом.</h1>
+      <div class="tagline">Human Design · Карта твоей энергии</div>
+      <div class="hero-divider"></div>
+    </div>
+
+    <!-- Карточка пользователя -->
+    <div class="my-card">
+      <div class="mini-bg">
+        <svg viewBox="0 0 36 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="18,3 28,13 18,23 8,13" stroke="#D4AC6B" stroke-width="0.8" fill="rgba(212,172,107,0.08)"/>
+          <rect x="13" y="23" width="10" height="10" stroke="#D4AC6B" stroke-width="0.8" fill="rgba(212,172,107,0.04)"/>
+          <polygon points="18,33 26,41 18,49 10,41" stroke="#D4AC6B" stroke-width="0.8" fill="rgba(212,172,107,0.08)"/>
+          <circle cx="18" cy="13" r="1.2" fill="#E5C58A"/>
+          <circle cx="18" cy="41" r="1.2" fill="#E5C58A"/>
+        </svg>
+      </div>
+      <div class="info">
+        <div class="label">Твой профиль</div>
+        <div class="name">Катерина</div>
+        <div class="meta">Генератор · 2/4 · Сакральный</div>
+      </div>
+      <div class="arrow">›</div>
+    </div>
+
+    <!-- Прогноз дня -->
+    <div class="section-title">Прогноз на сегодня</div>
+    <div class="daily">
+      <div class="date">6 мая · среда</div>
+      <div class="quote">«День, когда твоё "нет" громче твоего "да". Слушай Сакрал — он знает раньше головы.»</div>
+      <div class="more">Читать прогноз →</div>
+    </div>
+
+    <!-- Продукты -->
+    <div class="section-title">Глубже узнать себя</div>
+    <div class="products">
+
+      <div class="product featured">
+        <span class="badge">Хит</span>
+        <div class="icon">🎴</div>
+        <div class="body">
+          <div class="name">Карта Энергии</div>
+          <div class="desc">Профиль, авторитет, не-Я и 3 шага на неделю</div>
+        </div>
+        <div class="right">
+          <div class="price">€1,99</div>
+        </div>
+      </div>
+
+      <div class="product">
+        <div class="icon">🔍</div>
+        <div class="body">
+          <div class="name">Диагностика</div>
+          <div class="desc">Где утекает твоя энергия и как её вернуть</div>
+        </div>
+        <div class="right">
+          <div class="price">€9,99</div>
+        </div>
+      </div>
+
+      <div class="product">
+        <div class="icon">📖</div>
+        <div class="body">
+          <div class="name">Полная расшифровка</div>
+          <div class="desc">22 страницы про твой Дизайн полностью</div>
+        </div>
+        <div class="right">
+          <div class="price">€29,99</div>
+        </div>
+      </div>
+
+      <div class="product">
+        <div class="icon">💞</div>
+        <div class="body">
+          <div class="name">Совместимость</div>
+          <div class="desc">Как ваши энергии встречаются и где трутся</div>
+        </div>
+        <div class="right">
+          <div class="price">€19,99</div>
+        </div>
+      </div>
+
+      <div class="product">
+        <div class="icon">👶</div>
+        <div class="body">
+          <div class="name">Расшифровка для ребёнка</div>
+          <div class="desc">Потенциал и язык, на котором с ним говорить</div>
+        </div>
+        <div class="right">
+          <div class="price">€24,99</div>
+        </div>
+      </div>
+
+      <div class="product">
+        <div class="icon">🌀</div>
+        <div class="body">
+          <div class="name">Прогноз дня</div>
+          <div class="desc">Каждое утро — твой день в HD-оптике</div>
+        </div>
+        <div class="right">
+          <div class="price">€4,99/мес</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Действия -->
+    <div class="actions">
+      <button class="btn">Рассчитать бодиграф</button>
+      <button class="btn secondary">Поделиться</button>
+    </div>
+
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="tabs">
+    <button class="tab active">
+      <div class="ico">✦</div>
+      <div>Главная</div>
+    </button>
+    <button class="tab">
+      <div class="ico">◈</div>
+      <div>Бодиграф</div>
+    </button>
+    <button class="tab">
+      <div class="ico">☾</div>
+      <div>Прогноз</div>
+    </button>
+    <button class="tab">
+      <div class="ico">✧</div>
+      <div>Профиль</div>
+    </button>
+  </div>
+
+</div>
+
+</body>
+</html>
