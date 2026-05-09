@@ -518,8 +518,8 @@
       <div class="hero-divider"></div>
     </div>
 
-    <!-- Карточка пользователя -->
-    <div class="my-card">
+    <!-- Карточка пользователя (заполняется из API /me) -->
+    <div class="my-card" id="profile-card">
       <div class="mini-bg">
         <svg viewBox="0 0 36 50" fill="none" xmlns="http://www.w3.org/2000/svg">
           <polygon points="18,3 28,13 18,23 8,13" stroke="#D4AC6B" stroke-width="0.8" fill="rgba(212,172,107,0.08)"/>
@@ -530,9 +530,9 @@
         </svg>
       </div>
       <div class="info">
-        <div class="label">Твой профиль</div>
-        <div class="name">Катерина</div>
-        <div class="meta">Генератор · 2/4 · Сакральный</div>
+        <div class="label" id="profile-label">Загружаем…</div>
+        <div class="name" id="profile-name">…</div>
+        <div class="meta" id="profile-meta">&nbsp;</div>
       </div>
       <div class="arrow">›</div>
     </div>
@@ -649,12 +649,99 @@
 </div>
 
 <script>
+  // ── URL бэкенда (поменять на свой стабильный когда настроим named tunnel) ─────
+  const API_URL = "https://wishing-path-absolutely-partner.trycloudflare.com";
+
+  // ── Переводы для отображения ──────────────────────────────────────────────────
+  const TYPE_RU = {
+    "Generator": "Генератор",
+    "ManifestingGenerator": "Манифестирующий Генератор",
+    "Manifestor": "Манифестор",
+    "Projector": "Проектор",
+    "Reflector": "Рефлектор",
+  };
+  const AUTHORITY_RU = {
+    "Sacral": "Сакральный",
+    "Emotional": "Эмоциональный",
+    "Splenic": "Селезёночный",
+    "Ego-Manifested": "Эго (М)",
+    "Ego-Projected": "Эго (П)",
+    "Self-Projected": "Самопроецируемый",
+    "Mental": "Ментальный",
+    "Lunar": "Лунный",
+  };
+
+  // ── Telegram WebApp init ──────────────────────────────────────────────────────
+  let tg = null;
   if (window.Telegram && window.Telegram.WebApp) {
-    const tg = window.Telegram.WebApp;
+    tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
     tg.disableVerticalSwipes && tg.disableVerticalSwipes();
   }
+
+  // ── Обновляем карточку профиля по данным из /me ───────────────────────────────
+  function renderProfile(data) {
+    const label = document.getElementById("profile-label");
+    const name  = document.getElementById("profile-name");
+    const meta  = document.getElementById("profile-meta");
+
+    if (data && data.has_profile) {
+      label.textContent = "Твой профиль";
+      name.textContent  = data.name || data.telegram_first_name || "Без имени";
+      const t = TYPE_RU[data.type] || data.type;
+      const a = AUTHORITY_RU[data.authority] || data.authority;
+      meta.textContent = `${t} · ${data.profile} · ${a}`;
+    } else {
+      label.textContent = "Бодиграф";
+      name.textContent  = data && data.telegram_first_name
+        ? `Привет, ${data.telegram_first_name}!`
+        : "Привет!";
+      meta.textContent  = "Нажми, чтобы рассчитать свой бодиграф →";
+    }
+  }
+
+  function renderProfileError(message) {
+    const label = document.getElementById("profile-label");
+    const name  = document.getElementById("profile-name");
+    const meta  = document.getElementById("profile-meta");
+    label.textContent = "Профиль";
+    name.textContent  = "—";
+    meta.textContent  = message;
+  }
+
+  // ── Запрашиваем профиль ───────────────────────────────────────────────────────
+  async function loadProfile() {
+    if (!tg || !tg.initData) {
+      // Открыто не из Telegram (например, в браузере) — показываем демо-данные
+      renderProfile({
+        has_profile: true,
+        name: "Катерина (демо)",
+        type: "Generator",
+        profile: "2/4",
+        authority: "Sacral",
+      });
+      return;
+    }
+    try {
+      const res = await fetch(`${API_URL}/me`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ init_data: tg.initData }),
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        renderProfileError(`Ошибка ${res.status}: ${errText.slice(0, 60)}`);
+        return;
+      }
+      const data = await res.json();
+      renderProfile(data);
+    } catch (e) {
+      renderProfileError("Сервер недоступен. Попробуй позже.");
+    }
+  }
+
+  loadProfile();
 </script>
 
 </body>
