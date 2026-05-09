@@ -437,6 +437,185 @@
 
   .content::-webkit-scrollbar { width: 0; }
 
+  /* ─── Многоэкранная навигация ────────────────────────────────────────── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ─── Форма расчёта ──────────────────────────────────────────────────── */
+  .form-hero {
+    text-align: center;
+    padding: 24px 0 18px;
+  }
+  .form-hero h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+  }
+  .form-hero h2 .accent { color: var(--gold-bright); font-style: italic; }
+  .form-hero p {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    letter-spacing: 0.5px;
+    max-width: 280px;
+    margin: 0 auto;
+  }
+
+  .field {
+    margin-bottom: 18px;
+  }
+  .field label {
+    display: block;
+    font-size: 10px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    margin-bottom: 8px;
+    font-weight: 400;
+  }
+  .field input[type="text"],
+  .field input[type="date"],
+  .field input[type="time"] {
+    width: 100%;
+    background: rgba(20, 8, 31, 0.7);
+    border: 1px solid var(--gold-line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'Raleway', sans-serif;
+    font-weight: 400;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .field input::placeholder { color: var(--text-dim); }
+  .field input:focus {
+    border-color: var(--gold-bright);
+    background: rgba(28, 14, 43, 0.9);
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .field-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    line-height: 1.4;
+    font-style: italic;
+  }
+
+  /* Контейнер с скроллом и safe-area */
+  .form-actions {
+    margin-top: 24px;
+    margin-bottom: 8px;
+  }
+
+  .error-box {
+    background: rgba(180, 60, 60, 0.15);
+    border: 1px solid rgba(220, 100, 100, 0.4);
+    color: #f0c0c0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    display: none;
+  }
+  .error-box.show { display: block; }
+
+  /* Спиннер для загрузки */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(20, 8, 31, 0.3);
+    border-top-color: #14081F;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* ─── Экран результата ───────────────────────────────────────────────── */
+  .result-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 30px;
+    font-weight: 500;
+    text-align: center;
+    color: var(--gold-bright);
+    margin: 18px 0 4px;
+    letter-spacing: 0.3px;
+  }
+  .result-meta {
+    text-align: center;
+    color: var(--text-soft);
+    font-size: 13px;
+    margin-bottom: 18px;
+    letter-spacing: 0.5px;
+  }
+  .bodygraph-img-wrap {
+    background: rgba(20, 8, 31, 0.5);
+    border: 1px solid var(--gold-line);
+    border-radius: 16px;
+    padding: 12px;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+  .bodygraph-img-wrap img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+  .result-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .result-stat {
+    background: rgba(20, 8, 31, 0.6);
+    border: 1px solid rgba(212, 172, 107, 0.12);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .result-stat .label {
+    font-size: 9px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 4px;
+  }
+  .result-stat .value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* Кнопка-ссылка наверху экрана для возврата */
+  .back-link {
+    background: none;
+    border: none;
+    color: var(--gold);
+    font-size: 13px;
+    padding: 6px 0;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
   @media (max-width: 430px) {
     body { padding: 0; align-items: stretch; }
     .phone-frame {
@@ -467,6 +646,9 @@
   </div>
 
   <div class="content">
+
+  <!-- ─── ЭКРАН: ГЛАВНАЯ ─────────────────────────────────────────────── -->
+  <div class="screen active" id="screen-home">
 
     <!-- Hero с лотосом -->
     <div class="hero">
@@ -620,11 +802,93 @@
 
     <!-- Действия -->
     <div class="actions">
-      <button class="btn">Рассчитать бодиграф</button>
-      <button class="btn secondary">Поделиться</button>
+      <button class="btn" id="btn-go-calc">Рассчитать бодиграф</button>
+      <button class="btn secondary" id="btn-share">Поделиться</button>
     </div>
 
   </div>
+  <!-- /screen-home -->
+
+  <!-- ─── ЭКРАН: ФОРМА РАСЧЁТА ──────────────────────────────────────── -->
+  <div class="screen" id="screen-calc">
+    <button class="back-link" data-back-to="screen-home">‹ Назад</button>
+
+    <div class="form-hero">
+      <h2>Рассчитай свой <span class="accent">Дизайн</span></h2>
+      <p>Чтобы увидеть твою карту энергии, нужны точные данные о рождении</p>
+    </div>
+
+    <div class="error-box" id="calc-error"></div>
+
+    <form id="calc-form" autocomplete="off" novalidate>
+
+      <div class="field">
+        <label for="f-name">Имя</label>
+        <input type="text" id="f-name" name="name" placeholder="Например, Катерина" required maxlength="50">
+      </div>
+
+      <div class="field">
+        <label for="f-date">Дата рождения</label>
+        <input type="date" id="f-date" name="date" required min="1900-01-01" max="2100-12-31">
+      </div>
+
+      <div class="field">
+        <label for="f-time">Время рождения</label>
+        <input type="time" id="f-time" name="time" required>
+        <div class="field-hint">Если точное время не знаешь — попробуй 12:00, но результат будет менее точным</div>
+      </div>
+
+      <div class="field">
+        <label for="f-city">Город рождения</label>
+        <input type="text" id="f-city" name="city" placeholder="Например, Одесса" required>
+        <div class="field-hint">Можно с страной: «Лимасол, Кипр»</div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn" id="btn-submit-calc">Рассчитать</button>
+      </div>
+
+    </form>
+
+  </div>
+  <!-- /screen-calc -->
+
+  <!-- ─── ЭКРАН: РЕЗУЛЬТАТ ──────────────────────────────────────────── -->
+  <div class="screen" id="screen-result">
+    <button class="back-link" data-back-to="screen-home">‹ На главную</button>
+
+    <div class="result-name" id="r-name">…</div>
+    <div class="result-meta" id="r-meta">…</div>
+
+    <div class="bodygraph-img-wrap" id="r-img-wrap">
+      <img id="r-img" alt="Твой бодиграф">
+    </div>
+
+    <div class="result-stats">
+      <div class="result-stat">
+        <div class="label">Тип</div>
+        <div class="value" id="r-type">—</div>
+      </div>
+      <div class="result-stat">
+        <div class="label">Профиль</div>
+        <div class="value" id="r-profile">—</div>
+      </div>
+      <div class="result-stat">
+        <div class="label">Авторитет</div>
+        <div class="value" id="r-authority">—</div>
+      </div>
+      <div class="result-stat">
+        <div class="label">Определённых центров</div>
+        <div class="value" id="r-centers">—</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn secondary" data-back-to="screen-home">Готово</button>
+    </div>
+
+  </div>
+  <!-- /screen-result -->
 
   <!-- Bottom nav -->
   <div class="tabs">
@@ -710,17 +974,20 @@
     meta.textContent  = message;
   }
 
+  // ── Стейт юзера ──────────────────────────────────────────────────────────────
+  let currentProfile = null;  // последний ответ /me
+
   // ── Запрашиваем профиль ───────────────────────────────────────────────────────
   async function loadProfile() {
     if (!tg || !tg.initData) {
-      // Открыто не из Telegram (например, в браузере) — показываем демо-данные
-      renderProfile({
+      currentProfile = {
         has_profile: true,
         name: "Катерина (демо)",
         type: "Generator",
         profile: "2/4",
         authority: "Sacral",
-      });
+      };
+      renderProfile(currentProfile);
       return;
     }
     try {
@@ -734,14 +1001,157 @@
         renderProfileError(`Ошибка ${res.status}: ${errText.slice(0, 60)}`);
         return;
       }
-      const data = await res.json();
-      renderProfile(data);
+      currentProfile = await res.json();
+      renderProfile(currentProfile);
     } catch (e) {
       renderProfileError("Сервер недоступен. Попробуй позже.");
     }
   }
 
   loadProfile();
+
+  // ── Навигация между экранами ──────────────────────────────────────────────────
+  const screens = ["screen-home", "screen-calc", "screen-result"];
+  function showScreen(id) {
+    screens.forEach(s => {
+      document.getElementById(s).classList.toggle("active", s === id);
+    });
+    const content = document.querySelector(".content");
+    if (content) content.scrollTop = 0;
+    if (tg && tg.BackButton) {
+      if (id === "screen-home") tg.BackButton.hide();
+      else tg.BackButton.show();
+    }
+  }
+
+  document.querySelectorAll("[data-back-to]").forEach(el => {
+    el.addEventListener("click", () => showScreen(el.dataset.backTo));
+  });
+  if (tg && tg.BackButton) {
+    tg.BackButton.onClick(() => showScreen("screen-home"));
+  }
+
+  document.getElementById("btn-go-calc").addEventListener("click", () => {
+    prefillForm();
+    showScreen("screen-calc");
+  });
+
+  document.getElementById("profile-card").addEventListener("click", () => {
+    prefillForm();
+    showScreen("screen-calc");
+  });
+
+  function prefillForm() {
+    if (currentProfile && currentProfile.name) {
+      document.getElementById("f-name").value = currentProfile.name;
+    }
+  }
+
+  // ── Submit формы расчёта ──────────────────────────────────────────────────────
+  const calcForm = document.getElementById("calc-form");
+  const calcError = document.getElementById("calc-error");
+  const submitBtn = document.getElementById("btn-submit-calc");
+  const submitBtnDefaultText = "Рассчитать";
+
+  function showCalcError(msg) {
+    calcError.textContent = msg;
+    calcError.classList.add("show");
+  }
+  function hideCalcError() {
+    calcError.classList.remove("show");
+  }
+  function setSubmitLoading(loading) {
+    if (loading) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "";
+      const spinner = document.createElement("span");
+      spinner.className = "spinner";
+      submitBtn.appendChild(spinner);
+      submitBtn.appendChild(document.createTextNode("Считаем..."));
+    } else {
+      submitBtn.disabled = false;
+      submitBtn.textContent = submitBtnDefaultText;
+    }
+  }
+
+  calcForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideCalcError();
+
+    const name = document.getElementById("f-name").value.trim();
+    const dateStr = document.getElementById("f-date").value;
+    const timeStr = document.getElementById("f-time").value;
+    const city = document.getElementById("f-city").value.trim();
+
+    if (!name) return showCalcError("Укажи имя");
+    if (!dateStr) return showCalcError("Выбери дату рождения");
+    if (!timeStr) return showCalcError("Выбери время рождения");
+    if (!city) return showCalcError("Укажи город рождения");
+
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const [hour, minute] = timeStr.split(":").map(Number);
+
+    setSubmitLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/calculate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          init_data: tg ? tg.initData : "",
+          name, year, month, day, hour, minute, city,
+        }),
+      });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+        showCalcError(errBody.detail || "Что-то пошло не так. Попробуй ещё раз.");
+        return;
+      }
+
+      const data = await res.json();
+      renderResult(data);
+      showScreen("screen-result");
+
+      currentProfile = {
+        has_profile: true,
+        name: data.name,
+        type: data.type,
+        profile: data.profile,
+        authority: data.authority,
+      };
+      renderProfile(currentProfile);
+
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+
+    } catch (e) {
+      showCalcError("Сервер недоступен. Проверь интернет и попробуй ещё раз.");
+    } finally {
+      setSubmitLoading(false);
+    }
+  });
+
+  // ── Рендер результата ────────────────────────────────────────────────────────
+  function renderResult(data) {
+    document.getElementById("r-name").textContent = data.name || "Без имени";
+    const t = TYPE_RU[data.type] || data.type;
+    const a = AUTHORITY_RU[data.authority] || data.authority;
+    document.getElementById("r-meta").textContent = `${t} · ${data.profile} · ${a}`;
+    document.getElementById("r-type").textContent = t;
+    document.getElementById("r-profile").textContent = data.profile;
+    document.getElementById("r-authority").textContent = a;
+    document.getElementById("r-centers").textContent =
+      `${(data.defined_centers || []).length} из 9`;
+
+    const imgEl = document.getElementById("r-img");
+    const imgWrap = document.getElementById("r-img-wrap");
+    if (data.image_base64) {
+      imgEl.src = "data:image/png;base64," + data.image_base64;
+      imgWrap.style.display = "";
+    } else {
+      imgWrap.style.display = "none";
+    }
+  }
 </script>
 
 </body>
