@@ -692,6 +692,100 @@
     box-shadow: none;
   }
 
+  /* ─── Счётчик квоты в окружении ───────────────────────────────────────── */
+  .quota-line {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: -8px 0 18px;
+    font-weight: 400;
+  }
+  .quota-line .count {
+    color: var(--gold);
+    font-weight: 500;
+  }
+  .quota-line.unlimited .count { color: var(--gold-bright); }
+
+  /* ─── Промо-карточка «Купи безлимит» ──────────────────────────────────── */
+  .upsell {
+    background:
+      radial-gradient(ellipse at top right, rgba(212, 172, 107, 0.15), transparent 60%),
+      linear-gradient(135deg, rgba(28, 14, 43, 0.95), rgba(20, 8, 31, 0.95));
+    border: 1px solid var(--gold-line);
+    border-radius: 18px;
+    padding: 22px 18px;
+    margin-bottom: 14px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .upsell::before {
+    content: '✦';
+    position: absolute;
+    top: 12px; right: 16px;
+    color: var(--gold);
+    font-size: 16px;
+    opacity: 0.6;
+  }
+  .upsell h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--gold-bright);
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+  }
+  .upsell h3 .price { font-style: italic; color: var(--text); }
+  .upsell p {
+    font-size: 12px;
+    color: var(--text-soft);
+    line-height: 1.6;
+    margin-bottom: 16px;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ─── Модалка ────────────────────────────────────────────────────────── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 24px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: linear-gradient(135deg, #1C0E2B, #14081F);
+    border: 1px solid var(--gold-line);
+    border-radius: 20px;
+    padding: 24px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+  }
+  .modal h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    color: var(--gold-bright);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+  .modal p {
+    font-size: 13px;
+    color: var(--text-soft);
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+  .modal .btn { margin-bottom: 8px; }
+  .modal .btn:last-child { margin-bottom: 0; }
+
   @media (max-width: 430px) {
     body { padding: 0; align-items: stretch; }
     .phone-frame {
@@ -991,6 +1085,8 @@
       Загружаем…
     </div>
 
+    <div class="quota-line" id="env-quota" style="display:none"></div>
+
     <div class="env-list" id="env-list" style="display:none"></div>
 
     <div class="env-empty" id="env-empty" style="display:none">
@@ -998,12 +1094,29 @@
       <div>В окружении пока никого нет.<br>Добавь близкого, чтобы держать его карту рядом.</div>
     </div>
 
-    <div class="actions">
+    <!-- Промо-блок при достижении лимита -->
+    <div class="upsell" id="env-upsell" style="display:none">
+      <h3>Безлимитное окружение · <span class="price">€5/мес</span></h3>
+      <p>Сохраняй сколько угодно близких — партнёров, детей, родителей, команду. Ты заполнила бесплатные 5 мест.</p>
+      <button class="btn" id="btn-buy-env-pro">Подключить безлимит</button>
+    </div>
+
+    <div class="actions" id="env-actions">
       <button class="btn" id="btn-add-person">Добавить человека</button>
     </div>
 
   </div>
   <!-- /screen-environment -->
+
+  <!-- ─── МОДАЛКА: подписка «безлимит» ────────────────────────────────── -->
+  <div class="modal-backdrop" id="modal-buy-env">
+    <div class="modal">
+      <h3>Скоро будет доступно</h3>
+      <p>Оплата прямо в приложении появится через пару недель. А пока напиши Катрин — она оформит подписку вручную:</p>
+      <button class="btn" id="btn-modal-write">Написать Катрин</button>
+      <button class="btn secondary" id="btn-modal-close">Закрыть</button>
+    </div>
+  </div>
 
   <!-- Bottom nav -->
   <div class="tabs">
@@ -1350,6 +1463,12 @@
 
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+        // 402 = лимит окружения исчерпан
+        if (res.status === 402) {
+          showCalcError(errBody.detail || "Достигнут лимит");
+          showBuyEnvModal();
+          return;
+        }
         showCalcError(errBody.detail || "Что-то пошло не так");
         return;
       }
@@ -1443,13 +1562,19 @@
     const loading = document.getElementById("env-loading");
     const list = document.getElementById("env-list");
     const empty = document.getElementById("env-empty");
+    const quota = document.getElementById("env-quota");
+    const upsell = document.getElementById("env-upsell");
+    const actions = document.getElementById("env-actions");
+
     errBox.classList.remove("show");
     loading.style.display = "";
     list.style.display = "none";
     empty.style.display = "none";
+    quota.style.display = "none";
+    upsell.style.display = "none";
+    actions.style.display = "";
 
     if (!tg || !tg.initData) {
-      // Демо: показываем заглушку с одним человеком
       loading.style.display = "none";
       empty.style.display = "";
       return;
@@ -1468,7 +1593,7 @@
         return;
       }
       const data = await res.json();
-      renderEnvList(data.items || []);
+      renderEnvList(data);
     } catch (e) {
       loading.style.display = "none";
       errBox.textContent = "Сервер недоступен";
@@ -1476,13 +1601,47 @@
     }
   }
 
-  function renderEnvList(items) {
+  function renderEnvList(data) {
+    const items = data.items || [];
+    const count = data.count ?? items.length;
+    const limit = data.limit ?? 5;
+    const isPremium = !!data.is_premium;
+
     const list = document.getElementById("env-list");
     const loading = document.getElementById("env-loading");
     const empty = document.getElementById("env-empty");
+    const quota = document.getElementById("env-quota");
+    const upsell = document.getElementById("env-upsell");
+    const actions = document.getElementById("env-actions");
 
     loading.style.display = "none";
     list.replaceChildren();
+
+    // Счётчик квоты
+    quota.style.display = "";
+    if (isPremium) {
+      quota.classList.add("unlimited");
+      quota.replaceChildren(
+        document.createTextNode(`Сохранено: `),
+        Object.assign(document.createElement("span"), { className: "count", textContent: `${count} · Безлимит` })
+      );
+    } else {
+      quota.classList.remove("unlimited");
+      quota.replaceChildren(
+        document.createTextNode(`Сохранено: `),
+        Object.assign(document.createElement("span"), { className: "count", textContent: `${count} из ${limit}` })
+      );
+    }
+
+    // Лимит достигнут? → меняем кнопку на промо
+    const atLimit = !isPremium && count >= limit;
+    if (atLimit) {
+      actions.style.display = "none";
+      upsell.style.display = "";
+    } else {
+      actions.style.display = "";
+      upsell.style.display = "none";
+    }
 
     if (items.length === 0) {
       list.style.display = "none";
@@ -1575,6 +1734,29 @@
       showCalcError("Не удалось загрузить данные");
     }
   }
+
+  // ── Модалка подписки ─────────────────────────────────────────────────────────
+  const modalBuyEnv = document.getElementById("modal-buy-env");
+  function showBuyEnvModal() {
+    modalBuyEnv.classList.add("show");
+  }
+  function hideBuyEnvModal() {
+    modalBuyEnv.classList.remove("show");
+  }
+  document.getElementById("btn-buy-env-pro").addEventListener("click", showBuyEnvModal);
+  document.getElementById("btn-modal-close").addEventListener("click", hideBuyEnvModal);
+  document.getElementById("btn-modal-write").addEventListener("click", () => {
+    hideBuyEnvModal();
+    if (tg && tg.openTelegramLink) {
+      tg.openTelegramLink("https://t.me/katrin_lopukhina");
+    } else {
+      window.open("https://t.me/katrin_lopukhina", "_blank");
+    }
+  });
+  // Закрытие по клику вне модалки
+  modalBuyEnv.addEventListener("click", (e) => {
+    if (e.target === modalBuyEnv) hideBuyEnvModal();
+  });
 
   // Кнопка «Удалить из окружения»
   document.getElementById("btn-delete-person").addEventListener("click", async () => {
