@@ -748,6 +748,62 @@
     margin-right: auto;
   }
 
+  /* ─── Интерпретация совместимости («крючки») ──────────────────────────── */
+  .hooks-block {
+    background: linear-gradient(135deg, rgba(28, 14, 43, 0.7), rgba(20, 8, 31, 0.7));
+    border: 1px solid var(--gold-line);
+    border-radius: 18px;
+    padding: 20px 18px;
+    margin-bottom: 14px;
+  }
+  .hooks-opener {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 18px;
+    text-align: center;
+    letter-spacing: 0.2px;
+  }
+  .hooks-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .hooks-list li {
+    font-size: 13px;
+    color: var(--text-soft);
+    line-height: 1.55;
+    padding-left: 18px;
+    position: relative;
+    letter-spacing: 0.1px;
+  }
+  .hooks-list li::before {
+    content: '✦';
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--gold);
+    font-size: 12px;
+  }
+  .hooks-list strong {
+    color: var(--gold-bright);
+    font-weight: 500;
+  }
+  .hooks-closer {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    text-align: center;
+    font-style: italic;
+    padding-top: 14px;
+    border-top: 1px solid rgba(212, 172, 107, 0.12);
+  }
+
   /* ─── Модалка ────────────────────────────────────────────────────────── */
   .modal-backdrop {
     position: fixed;
@@ -1108,6 +1164,13 @@
           <div class="label">Только у партнёра</div>
           <div class="value" id="compat-b">0</div>
         </div>
+      </div>
+
+      <!-- Интерпретация: динамические «крючки» по числам -->
+      <div class="hooks-block" id="compat-hooks">
+        <div class="hooks-opener" id="compat-hooks-opener"></div>
+        <ul class="hooks-list" id="compat-hooks-list"></ul>
+        <div class="hooks-closer" id="compat-hooks-closer"></div>
       </div>
 
       <!-- Промо-блок: купить расшифровку совместимости -->
@@ -1900,6 +1963,63 @@
     } else {
       imgWrap.style.display = "none";
     }
+
+    renderCompatHooks(data);
+  }
+
+  // ── Динамические «крючки»-интерпретации совместимости ────────────────────────
+  function renderCompatHooks(data) {
+    const opener = document.getElementById("compat-hooks-opener");
+    const list = document.getElementById("compat-hooks-list");
+    const closer = document.getElementById("compat-hooks-closer");
+
+    opener.textContent = "Эта карта молчит. Она показывает только геометрию: где вы складываетесь и где трётесь.";
+
+    list.replaceChildren();
+
+    const them = data.their_name || "партнёр";
+    const em = data.channels_em_count || 0;
+    const dom = data.channels_dom_count || 0;
+    const a = data.channels_a_count || 0;
+    const b = data.channels_b_count || 0;
+
+    // Безопасное создание <li> с одним <strong>
+    function addHook(prefix, strongText, suffix) {
+      const li = document.createElement("li");
+      if (prefix) li.appendChild(document.createTextNode(prefix));
+      const s = document.createElement("strong");
+      s.textContent = strongText;
+      li.appendChild(s);
+      if (suffix) li.appendChild(document.createTextNode(suffix));
+      list.appendChild(li);
+    }
+
+    // EM
+    if (em >= 3) {
+      addHook("У вас ", `${em} электромагнитных каналов`, ` — это много. Места, где вместе вы делаете то, что по одиночке у каждого выключено. Это и есть тяга, на которой вы держитесь.`);
+    } else if (em > 0) {
+      addHook("", `${em} электромагнитных ${em === 1 ? "канал" : "канала"}`, ` — место, где вы вместе включаете то, что по одиночке у каждого молчит. Самое цепкое в любой паре.`);
+    } else {
+      addHook("", "0 электромагнитных каналов", ". Вы не «достраиваете» друг друга — это не плохо, просто другая динамика. Чаще всего такие пары держатся не на тяге, а на сходстве или на дополнении.");
+    }
+
+    // Dominance
+    if (dom >= 3) {
+      addHook(`И ${dom} канала доминирования — `, "очень похожи", `. Это поддержка в том, что вам обоим важно, и риск выгореть в одной волне, если переборщить.`);
+    } else if (dom > 0) {
+      addHook(`${dom} ${dom === 1 ? "канал" : "канала"} доминирования — `, "общее", `. Места, где вы оба включены одинаково. Может стать опорой, может — слепой зоной.`);
+    }
+
+    // A only / B only
+    if (a > 0 && b > 0) {
+      addHook(`Ты приносишь ${a} ${a === 1 ? "канал" : "своих канала"}, ${them} — `, `${b} своих`, `. То, чем вы расширяете друг друга, не пересекается. Вы не повторяете один другого.`);
+    } else if (a > 0) {
+      addHook(`У тебя ${a} `, `своих канала`, `, которых нет у ${them}. Это твой вклад в эту связь — то, чем ты её расширяешь.`);
+    } else if (b > 0) {
+      addHook(`У ${them} ${b} ${b === 1 ? "канал" : "канала"}, которых нет у тебя — `, "то, чем расширяет тебя", `. Если есть ощущение «он/она достаёт из меня что-то новое» — это оно.`);
+    }
+
+    closer.textContent = "Что значит каждый канал лично для вас, как это проявляется в близости, в спорах, в быту — в полной расшифровке.";
   }
 
   // Кнопка «Удалить из окружения»
