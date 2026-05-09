@@ -1062,13 +1062,68 @@
     </div>
 
     <div class="actions">
-      <button class="btn" id="btn-edit-data">Изменить данные</button>
+      <button class="btn" id="btn-compatibility" style="display:none">💞 Совместимость</button>
+      <button class="btn secondary" id="btn-edit-data">Изменить данные</button>
       <button class="btn danger" id="btn-delete-person" style="display:none">Удалить из окружения</button>
       <button class="btn secondary" id="btn-result-done">Готово</button>
     </div>
 
   </div>
   <!-- /screen-result -->
+
+  <!-- ─── ЭКРАН: СОВМЕСТИМОСТЬ ──────────────────────────────────────── -->
+  <div class="screen" id="screen-compatibility">
+    <button class="back-link" id="btn-compat-back">‹ Назад</button>
+
+    <div class="form-hero">
+      <h2 id="compat-title">Ваша <span class="accent">совместимость</span></h2>
+      <p id="compat-subtitle">Как ваши энергии встречаются и где трутся</p>
+    </div>
+
+    <div class="error-box" id="compat-error"></div>
+
+    <div id="compat-loading" style="text-align:center;padding:40px;color:var(--text-dim);font-size:13px">
+      Считаем композитную карту…
+    </div>
+
+    <div id="compat-content" style="display:none">
+      <div class="bodygraph-img-wrap" id="compat-img-wrap">
+        <img id="compat-img" alt="Композитный бодиграф">
+      </div>
+
+      <div class="result-stats">
+        <div class="result-stat">
+          <div class="label">Электромагнитные</div>
+          <div class="value" id="compat-em">0</div>
+        </div>
+        <div class="result-stat">
+          <div class="label">Доминирование</div>
+          <div class="value" id="compat-dom">0</div>
+        </div>
+        <div class="result-stat">
+          <div class="label">Только у тебя</div>
+          <div class="value" id="compat-a">0</div>
+        </div>
+        <div class="result-stat">
+          <div class="label">Только у партнёра</div>
+          <div class="value" id="compat-b">0</div>
+        </div>
+      </div>
+
+      <!-- Промо-блок: купить расшифровку совместимости -->
+      <div class="upsell">
+        <h3>Расшифровка совместимости · <span class="price">€19,99</span></h3>
+        <p>Это карта без слов. А расшифровка — это ваша история на языке Human Design: как вы встречаетесь, что друг другу отдаёте, где трётесь и где притягиваетесь.</p>
+        <button class="btn" id="btn-buy-compat">Заказать расшифровку</button>
+      </div>
+
+      <div class="actions">
+        <button class="btn secondary" id="btn-compat-done">Готово</button>
+      </div>
+    </div>
+
+  </div>
+  <!-- /screen-compatibility -->
 
   <!-- ─── ЭКРАН: МОЁ ОКРУЖЕНИЕ ──────────────────────────────────────── -->
   <div class="screen" id="screen-environment">
@@ -1240,7 +1295,7 @@
   loadProfile();
 
   // ── Навигация между экранами ──────────────────────────────────────────────────
-  const screens = ["screen-home", "screen-calc", "screen-result", "screen-environment"];
+  const screens = ["screen-home", "screen-calc", "screen-result", "screen-environment", "screen-compatibility"];
   function showScreen(id) {
     screens.forEach(s => {
       document.getElementById(s).classList.toggle("active", s === id);
@@ -1282,6 +1337,12 @@
         formMode === "self" ? showScreen("screen-home") : showScreen("screen-environment");
       } else if (active === "screen-result") {
         viewedChart && viewedChart.mode === "env" ? showScreen("screen-environment") : showScreen("screen-home");
+      } else if (active === "screen-compatibility") {
+        if (viewedChart && viewedChart.mode === "env" && viewedChart.id) {
+          openPersonChart(viewedChart.id);
+        } else {
+          showScreen("screen-environment");
+        }
       } else {
         showScreen("screen-home");
       }
@@ -1375,6 +1436,7 @@
     showScreen("screen-result");
     viewedChart = { mode: "self", id: null };
     document.getElementById("btn-delete-person").style.display = "none";
+    document.getElementById("btn-compatibility").style.display = "none";
 
     try {
       const res = await fetch(`${API_URL}/my-chart`, {
@@ -1479,7 +1541,7 @@
       if (formMode === "self") {
         viewedChart = { mode: "self", id: null };
         document.getElementById("btn-delete-person").style.display = "none";
-        // Обновляем карточку профиля
+        document.getElementById("btn-compatibility").style.display = "none";
         currentProfile = {
           has_profile: true,
           name: data.name, type: data.type, profile: data.profile,
@@ -1489,6 +1551,7 @@
       } else {
         viewedChart = { mode: "env", id: data.id };
         document.getElementById("btn-delete-person").style.display = "";
+        document.getElementById("btn-compatibility").style.display = "";
       }
 
       showScreen("screen-result");
@@ -1695,6 +1758,7 @@
     showScreen("screen-result");
     viewedChart = { mode: "env", id: personId };
     document.getElementById("btn-delete-person").style.display = "";
+    document.getElementById("btn-compatibility").style.display = "";
 
     try {
       const res = await fetch(`${API_URL}/environment/chart`, {
@@ -1757,6 +1821,86 @@
   modalBuyEnv.addEventListener("click", (e) => {
     if (e.target === modalBuyEnv) hideBuyEnvModal();
   });
+
+  // ── Совместимость ─────────────────────────────────────────────────────────────
+  document.getElementById("btn-compatibility").addEventListener("click", () => {
+    if (viewedChart && viewedChart.mode === "env" && viewedChart.id) {
+      openCompatibility(viewedChart.id);
+    }
+  });
+
+  document.getElementById("btn-compat-back").addEventListener("click", () => {
+    // Возвращаемся на экран человека (а не сразу в окружение)
+    if (viewedChart && viewedChart.mode === "env" && viewedChart.id) {
+      openPersonChart(viewedChart.id);
+    } else {
+      showScreen("screen-environment");
+    }
+  });
+  document.getElementById("btn-compat-done").addEventListener("click", () => {
+    showScreen("screen-environment");
+  });
+
+  document.getElementById("btn-buy-compat").addEventListener("click", () => {
+    if (tg && tg.openTelegramLink) {
+      tg.openTelegramLink("https://t.me/katrin_lopukhina");
+    } else {
+      window.open("https://t.me/katrin_lopukhina", "_blank");
+    }
+  });
+
+  async function openCompatibility(personId) {
+    showScreen("screen-compatibility");
+    const errBox = document.getElementById("compat-error");
+    const loading = document.getElementById("compat-loading");
+    const content = document.getElementById("compat-content");
+    errBox.classList.remove("show");
+    loading.style.display = "";
+    content.style.display = "none";
+
+    try {
+      const res = await fetch(`${API_URL}/environment/compatibility`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ init_data: tg ? tg.initData : "", person_id: personId }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        loading.style.display = "none";
+        errBox.textContent = errBody.detail || `Ошибка ${res.status}`;
+        errBox.classList.add("show");
+        return;
+      }
+      const data = await res.json();
+      renderCompatibility(data);
+      loading.style.display = "none";
+      content.style.display = "";
+    } catch (e) {
+      loading.style.display = "none";
+      errBox.textContent = "Сервер недоступен";
+      errBox.classList.add("show");
+    }
+  }
+
+  function renderCompatibility(data) {
+    const subtitle = document.getElementById("compat-subtitle");
+    const rel = data.their_relationship ? ` (${data.their_relationship})` : "";
+    subtitle.textContent = `${data.my_name} и ${data.their_name}${rel}`;
+
+    document.getElementById("compat-em").textContent = data.channels_em_count;
+    document.getElementById("compat-dom").textContent = data.channels_dom_count;
+    document.getElementById("compat-a").textContent = data.channels_a_count;
+    document.getElementById("compat-b").textContent = data.channels_b_count;
+
+    const imgEl = document.getElementById("compat-img");
+    const imgWrap = document.getElementById("compat-img-wrap");
+    if (data.image_base64) {
+      imgEl.src = "data:image/png;base64," + data.image_base64;
+      imgWrap.style.display = "";
+    } else {
+      imgWrap.style.display = "none";
+    }
+  }
 
   // Кнопка «Удалить из окружения»
   document.getElementById("btn-delete-person").addEventListener("click", async () => {
