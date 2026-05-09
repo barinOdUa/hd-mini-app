@@ -616,6 +616,82 @@
     margin-bottom: 4px;
   }
 
+  /* ─── «Моё окружение» — список людей ──────────────────────────────────── */
+  .env-empty {
+    text-align: center;
+    padding: 40px 16px;
+    color: var(--text-dim);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .env-empty .icon {
+    font-size: 36px;
+    margin-bottom: 14px;
+    opacity: 0.6;
+  }
+
+  .env-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .env-item {
+    background: rgba(20, 8, 31, 0.6);
+    border: 1px solid rgba(212, 172, 107, 0.12);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .env-item:active {
+    background: rgba(28, 14, 43, 0.85);
+    border-color: var(--gold-line);
+  }
+  .env-item .avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(90, 53, 133, 0.7), rgba(45, 27, 71, 0.5));
+    border: 1px solid var(--gold-line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold-bright);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .env-item .body { flex: 1; min-width: 0; }
+  .env-item .name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .env-item .meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .env-item .arrow {
+    color: var(--gold);
+    font-size: 18px;
+    font-weight: 200;
+  }
+
+  .danger {
+    color: #f0a0a0 !important;
+  }
+  .btn.danger {
+    background: transparent;
+    color: #e09090;
+    border: 1px solid rgba(220, 100, 100, 0.4);
+    box-shadow: none;
+  }
+
   @media (max-width: 430px) {
     body { padding: 0; align-items: stretch; }
     .phone-frame {
@@ -803,6 +879,7 @@
     <!-- Действия -->
     <div class="actions">
       <button class="btn" id="btn-go-calc">Рассчитать бодиграф</button>
+      <button class="btn secondary" id="btn-go-environment">Моё окружение</button>
       <button class="btn secondary" id="btn-share">Поделиться</button>
     </div>
 
@@ -811,11 +888,11 @@
 
   <!-- ─── ЭКРАН: ФОРМА РАСЧЁТА ──────────────────────────────────────── -->
   <div class="screen" id="screen-calc">
-    <button class="back-link" data-back-to="screen-home">‹ Назад</button>
+    <button class="back-link" id="btn-calc-back">‹ Назад</button>
 
     <div class="form-hero">
-      <h2>Рассчитай свой <span class="accent">Дизайн</span></h2>
-      <p>Чтобы увидеть твою карту энергии, нужны точные данные о рождении</p>
+      <h2 id="form-title">Рассчитай свой <span class="accent">Дизайн</span></h2>
+      <p id="form-subtitle">Чтобы увидеть твою карту энергии, нужны точные данные о рождении</p>
     </div>
 
     <div class="error-box" id="calc-error"></div>
@@ -825,6 +902,12 @@
       <div class="field">
         <label for="f-name">Имя</label>
         <input type="text" id="f-name" name="name" placeholder="Например, Катерина" required maxlength="50">
+      </div>
+
+      <!-- Поле «кем приходится» — видно только для «окружения» -->
+      <div class="field" id="field-relationship" style="display:none">
+        <label for="f-relationship">Кем приходится <span style="opacity:0.6">(необязательно)</span></label>
+        <input type="text" id="f-relationship" name="relationship" placeholder="Например, мама / партнёр / сын" maxlength="50">
       </div>
 
       <div class="field">
@@ -853,15 +936,16 @@
   </div>
   <!-- /screen-calc -->
 
-  <!-- ─── ЭКРАН: РЕЗУЛЬТАТ ──────────────────────────────────────────── -->
+  <!-- ─── ЭКРАН: РЕЗУЛЬТАТ / ПРОСМОТР БОДИГРАФА ─────────────────────── -->
   <div class="screen" id="screen-result">
-    <button class="back-link" data-back-to="screen-home">‹ На главную</button>
+    <button class="back-link" id="btn-result-back">‹ Назад</button>
 
     <div class="result-name" id="r-name">…</div>
     <div class="result-meta" id="r-meta">…</div>
+    <div class="result-meta" id="r-relationship" style="font-style:italic;opacity:0.7;margin-top:-12px"></div>
 
     <div class="bodygraph-img-wrap" id="r-img-wrap">
-      <img id="r-img" alt="Твой бодиграф">
+      <img id="r-img" alt="Бодиграф">
     </div>
 
     <div class="result-stats">
@@ -884,11 +968,42 @@
     </div>
 
     <div class="actions">
-      <button class="btn secondary" data-back-to="screen-home">Готово</button>
+      <button class="btn" id="btn-edit-data">Изменить данные</button>
+      <button class="btn danger" id="btn-delete-person" style="display:none">Удалить из окружения</button>
+      <button class="btn secondary" id="btn-result-done">Готово</button>
     </div>
 
   </div>
   <!-- /screen-result -->
+
+  <!-- ─── ЭКРАН: МОЁ ОКРУЖЕНИЕ ──────────────────────────────────────── -->
+  <div class="screen" id="screen-environment">
+    <button class="back-link" data-back-to="screen-home">‹ На главную</button>
+
+    <div class="form-hero">
+      <h2>Моё <span class="accent">окружение</span></h2>
+      <p>Близкие люди и их карты энергии — всегда под рукой</p>
+    </div>
+
+    <div class="error-box" id="env-error"></div>
+
+    <div id="env-loading" style="text-align:center;padding:40px;color:var(--text-dim);font-size:13px">
+      Загружаем…
+    </div>
+
+    <div class="env-list" id="env-list" style="display:none"></div>
+
+    <div class="env-empty" id="env-empty" style="display:none">
+      <div class="icon">✦</div>
+      <div>В окружении пока никого нет.<br>Добавь близкого, чтобы держать его карту рядом.</div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="btn-add-person">Добавить человека</button>
+    </div>
+
+  </div>
+  <!-- /screen-environment -->
 
   <!-- Bottom nav -->
   <div class="tabs">
@@ -974,18 +1089,20 @@
     meta.textContent  = message;
   }
 
-  // ── Стейт юзера ──────────────────────────────────────────────────────────────
-  let currentProfile = null;  // последний ответ /me
+  // ── Стейт ────────────────────────────────────────────────────────────────────
+  let currentProfile = null;       // последний ответ /me
+  let formMode = "self";           // "self" | "env-new" | "env-edit"
+  let editingPersonId = null;      // id записи в окружении при редактировании
+  let viewedChart = null;          // {mode: "self"|"env", id: number|null} — что показано на result
 
-  // ── Запрашиваем профиль ───────────────────────────────────────────────────────
+  // ── /me ──────────────────────────────────────────────────────────────────────
   async function loadProfile() {
     if (!tg || !tg.initData) {
       currentProfile = {
         has_profile: true,
         name: "Катерина (демо)",
-        type: "Generator",
-        profile: "2/4",
-        authority: "Sacral",
+        type: "Generator", profile: "2/4", authority: "Sacral",
+        birth: { year: 1990, month: 6, day: 15, hour: 12, minute: 0, city: "Одесса" },
       };
       renderProfile(currentProfile);
       return;
@@ -997,8 +1114,7 @@
         body: JSON.stringify({ init_data: tg.initData }),
       });
       if (!res.ok) {
-        const errText = await res.text();
-        renderProfileError(`Ошибка ${res.status}: ${errText.slice(0, 60)}`);
+        renderProfileError(`Ошибка ${res.status}`);
         return;
       }
       currentProfile = await res.json();
@@ -1011,7 +1127,7 @@
   loadProfile();
 
   // ── Навигация между экранами ──────────────────────────────────────────────────
-  const screens = ["screen-home", "screen-calc", "screen-result"];
+  const screens = ["screen-home", "screen-calc", "screen-result", "screen-environment"];
   function showScreen(id) {
     screens.forEach(s => {
       document.getElementById(s).classList.toggle("active", s === id);
@@ -1024,34 +1140,151 @@
     }
   }
 
+  // Обычный data-back-to
   document.querySelectorAll("[data-back-to]").forEach(el => {
     el.addEventListener("click", () => showScreen(el.dataset.backTo));
   });
+
+  // Кнопка «Назад» формы — возвращает на правильный экран
+  document.getElementById("btn-calc-back").addEventListener("click", () => {
+    if (formMode === "self") showScreen("screen-home");
+    else showScreen("screen-environment");
+  });
+
+  // Кнопка «Назад» результата — на главную если self, на окружение если env
+  document.getElementById("btn-result-back").addEventListener("click", () => {
+    if (viewedChart && viewedChart.mode === "env") showScreen("screen-environment");
+    else showScreen("screen-home");
+  });
+  document.getElementById("btn-result-done").addEventListener("click", () => {
+    if (viewedChart && viewedChart.mode === "env") showScreen("screen-environment");
+    else showScreen("screen-home");
+  });
+
+  // Telegram BackButton
   if (tg && tg.BackButton) {
-    tg.BackButton.onClick(() => showScreen("screen-home"));
+    tg.BackButton.onClick(() => {
+      const active = screens.find(s => document.getElementById(s).classList.contains("active"));
+      if (active === "screen-calc") {
+        formMode === "self" ? showScreen("screen-home") : showScreen("screen-environment");
+      } else if (active === "screen-result") {
+        viewedChart && viewedChart.mode === "env" ? showScreen("screen-environment") : showScreen("screen-home");
+      } else {
+        showScreen("screen-home");
+      }
+    });
   }
 
+  // ── Открытие формы в разных режимах ──────────────────────────────────────────
+  function openCalcForm(mode, prefill) {
+    formMode = mode;
+    editingPersonId = mode === "env-edit" ? prefill.id : null;
+
+    // Подписи
+    const title = document.getElementById("form-title");
+    const subtitle = document.getElementById("form-subtitle");
+    const btn = document.getElementById("btn-submit-calc");
+    const fieldRel = document.getElementById("field-relationship");
+
+    if (mode === "self") {
+      title.innerHTML = 'Рассчитай свой <span class="accent">Дизайн</span>';
+      subtitle.textContent = "Чтобы увидеть твою карту энергии, нужны точные данные о рождении";
+      btn.textContent = "Рассчитать";
+      fieldRel.style.display = "none";
+    } else if (mode === "env-new") {
+      title.innerHTML = 'Добавить <span class="accent">человека</span>';
+      subtitle.textContent = "Сохрани близкого в окружение, чтобы держать его карту рядом";
+      btn.textContent = "Добавить";
+      fieldRel.style.display = "";
+    } else if (mode === "env-edit") {
+      title.innerHTML = 'Изменить <span class="accent">данные</span>';
+      subtitle.textContent = "Обнови данные о рождении и пересчитай карту";
+      btn.textContent = "Сохранить";
+      fieldRel.style.display = "";
+    }
+
+    // Заполнение
+    document.getElementById("f-name").value = prefill.name || "";
+    document.getElementById("f-relationship").value = prefill.relationship || "";
+    if (prefill.year && prefill.month && prefill.day) {
+      const m = String(prefill.month).padStart(2, "0");
+      const d = String(prefill.day).padStart(2, "0");
+      document.getElementById("f-date").value = `${prefill.year}-${m}-${d}`;
+    } else {
+      document.getElementById("f-date").value = "";
+    }
+    if (prefill.hour !== undefined && prefill.minute !== undefined) {
+      const h = String(prefill.hour).padStart(2, "0");
+      const min = String(prefill.minute).padStart(2, "0");
+      document.getElementById("f-time").value = `${h}:${min}`;
+    } else {
+      document.getElementById("f-time").value = "";
+    }
+    document.getElementById("f-city").value = prefill.city || "";
+
+    hideCalcError();
+    showScreen("screen-calc");
+  }
+
+  // Кнопка «Рассчитать бодиграф» на главной
   document.getElementById("btn-go-calc").addEventListener("click", () => {
-    prefillForm();
-    showScreen("screen-calc");
+    if (currentProfile && currentProfile.has_profile) {
+      // Уже есть → показываем сохранённый
+      openMyChartView();
+    } else {
+      openCalcForm("self", { name: currentProfile?.telegram_first_name || "" });
+    }
   });
 
+  // Клик по карточке профиля
   document.getElementById("profile-card").addEventListener("click", () => {
-    prefillForm();
-    showScreen("screen-calc");
+    if (currentProfile && currentProfile.has_profile) {
+      openMyChartView();
+    } else {
+      openCalcForm("self", { name: currentProfile?.telegram_first_name || "" });
+    }
   });
 
-  function prefillForm() {
-    if (currentProfile && currentProfile.name) {
-      document.getElementById("f-name").value = currentProfile.name;
+  // Кнопка «Изменить данные» на экране результата
+  document.getElementById("btn-edit-data").addEventListener("click", () => {
+    if (viewedChart && viewedChart.mode === "env") {
+      // Грузим данные человека и открываем форму
+      loadPersonForEdit(viewedChart.id);
+    } else {
+      // Свой бодиграф
+      openCalcForm("self", { name: currentProfile?.name, ...(currentProfile?.birth || {}) });
+    }
+  });
+
+  // ── Экран «Мой бодиграф» (sсохранённый чарт юзера) ───────────────────────────
+  async function openMyChartView() {
+    showResultLoading();
+    showScreen("screen-result");
+    viewedChart = { mode: "self", id: null };
+    document.getElementById("btn-delete-person").style.display = "none";
+
+    try {
+      const res = await fetch(`${API_URL}/my-chart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ init_data: tg ? tg.initData : "" }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        renderResultError(errBody.detail || `Ошибка ${res.status}`);
+        return;
+      }
+      const data = await res.json();
+      renderResult(data);
+    } catch (e) {
+      renderResultError("Сервер недоступен");
     }
   }
 
-  // ── Submit формы расчёта ──────────────────────────────────────────────────────
+  // ── Submit формы ─────────────────────────────────────────────────────────────
   const calcForm = document.getElementById("calc-form");
   const calcError = document.getElementById("calc-error");
   const submitBtn = document.getElementById("btn-submit-calc");
-  const submitBtnDefaultText = "Рассчитать";
 
   function showCalcError(msg) {
     calcError.textContent = msg;
@@ -1060,7 +1293,7 @@
   function hideCalcError() {
     calcError.classList.remove("show");
   }
-  function setSubmitLoading(loading) {
+  function setSubmitLoading(loading, defaultText) {
     if (loading) {
       submitBtn.disabled = true;
       submitBtn.textContent = "";
@@ -1070,7 +1303,7 @@
       submitBtn.appendChild(document.createTextNode("Считаем..."));
     } else {
       submitBtn.disabled = false;
-      submitBtn.textContent = submitBtnDefaultText;
+      submitBtn.textContent = defaultText;
     }
   }
 
@@ -1079,6 +1312,7 @@
     hideCalcError();
 
     const name = document.getElementById("f-name").value.trim();
+    const relationship = document.getElementById("f-relationship").value.trim();
     const dateStr = document.getElementById("f-date").value;
     const timeStr = document.getElementById("f-time").value;
     const city = document.getElementById("f-city").value.trim();
@@ -1091,43 +1325,60 @@
     const [year, month, day] = dateStr.split("-").map(Number);
     const [hour, minute] = timeStr.split(":").map(Number);
 
-    setSubmitLoading(true);
+    const defaultText = submitBtn.textContent;
+    setSubmitLoading(true, defaultText);
 
     try {
-      const res = await fetch(`${API_URL}/calculate`, {
+      let url, body;
+      if (formMode === "self") {
+        url = `${API_URL}/calculate`;
+        body = { init_data: tg ? tg.initData : "", name, year, month, day, hour, minute, city };
+      } else {
+        url = `${API_URL}/environment/save`;
+        body = {
+          init_data: tg ? tg.initData : "",
+          id: formMode === "env-edit" ? editingPersonId : null,
+          name, relationship, year, month, day, hour, minute, city,
+        };
+      }
+
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          init_data: tg ? tg.initData : "",
-          name, year, month, day, hour, minute, city,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-        showCalcError(errBody.detail || "Что-то пошло не так. Попробуй ещё раз.");
+        showCalcError(errBody.detail || "Что-то пошло не так");
         return;
       }
 
       const data = await res.json();
       renderResult(data);
+
+      if (formMode === "self") {
+        viewedChart = { mode: "self", id: null };
+        document.getElementById("btn-delete-person").style.display = "none";
+        // Обновляем карточку профиля
+        currentProfile = {
+          has_profile: true,
+          name: data.name, type: data.type, profile: data.profile,
+          authority: data.authority, birth: data.birth,
+        };
+        renderProfile(currentProfile);
+      } else {
+        viewedChart = { mode: "env", id: data.id };
+        document.getElementById("btn-delete-person").style.display = "";
+      }
+
       showScreen("screen-result");
-
-      currentProfile = {
-        has_profile: true,
-        name: data.name,
-        type: data.type,
-        profile: data.profile,
-        authority: data.authority,
-      };
-      renderProfile(currentProfile);
-
       if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
 
     } catch (e) {
       showCalcError("Сервер недоступен. Проверь интернет и попробуй ещё раз.");
     } finally {
-      setSubmitLoading(false);
+      setSubmitLoading(false, defaultText);
     }
   });
 
@@ -1143,6 +1394,15 @@
     document.getElementById("r-centers").textContent =
       `${(data.defined_centers || []).length} из 9`;
 
+    const relEl = document.getElementById("r-relationship");
+    if (data.relationship) {
+      relEl.textContent = data.relationship;
+      relEl.style.display = "";
+    } else {
+      relEl.textContent = "";
+      relEl.style.display = "none";
+    }
+
     const imgEl = document.getElementById("r-img");
     const imgWrap = document.getElementById("r-img-wrap");
     if (data.image_base64) {
@@ -1152,6 +1412,194 @@
       imgWrap.style.display = "none";
     }
   }
+
+  function showResultLoading() {
+    document.getElementById("r-name").textContent = "Загружаем…";
+    document.getElementById("r-meta").textContent = "";
+    document.getElementById("r-relationship").style.display = "none";
+    document.getElementById("r-img-wrap").style.display = "none";
+    ["r-type", "r-profile", "r-authority", "r-centers"].forEach(id => {
+      document.getElementById(id).textContent = "—";
+    });
+  }
+  function renderResultError(msg) {
+    document.getElementById("r-name").textContent = "Ошибка";
+    document.getElementById("r-meta").textContent = msg;
+    document.getElementById("r-img-wrap").style.display = "none";
+  }
+
+  // ── «Моё окружение» ──────────────────────────────────────────────────────────
+  document.getElementById("btn-go-environment").addEventListener("click", () => {
+    showScreen("screen-environment");
+    loadEnvironment();
+  });
+
+  document.getElementById("btn-add-person").addEventListener("click", () => {
+    openCalcForm("env-new", {});
+  });
+
+  async function loadEnvironment() {
+    const errBox = document.getElementById("env-error");
+    const loading = document.getElementById("env-loading");
+    const list = document.getElementById("env-list");
+    const empty = document.getElementById("env-empty");
+    errBox.classList.remove("show");
+    loading.style.display = "";
+    list.style.display = "none";
+    empty.style.display = "none";
+
+    if (!tg || !tg.initData) {
+      // Демо: показываем заглушку с одним человеком
+      loading.style.display = "none";
+      empty.style.display = "";
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/environment/list`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ init_data: tg.initData }),
+      });
+      if (!res.ok) {
+        loading.style.display = "none";
+        errBox.textContent = `Ошибка ${res.status}`;
+        errBox.classList.add("show");
+        return;
+      }
+      const data = await res.json();
+      renderEnvList(data.items || []);
+    } catch (e) {
+      loading.style.display = "none";
+      errBox.textContent = "Сервер недоступен";
+      errBox.classList.add("show");
+    }
+  }
+
+  function renderEnvList(items) {
+    const list = document.getElementById("env-list");
+    const loading = document.getElementById("env-loading");
+    const empty = document.getElementById("env-empty");
+
+    loading.style.display = "none";
+    list.replaceChildren();
+
+    if (items.length === 0) {
+      list.style.display = "none";
+      empty.style.display = "";
+      return;
+    }
+
+    empty.style.display = "none";
+    list.style.display = "";
+
+    items.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "env-item";
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = (item.name || "?").trim().charAt(0).toUpperCase();
+      row.appendChild(avatar);
+
+      const body = document.createElement("div");
+      body.className = "body";
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = item.name + (item.relationship ? ` · ${item.relationship}` : "");
+      body.appendChild(name);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      if (item.type) {
+        const t = TYPE_RU[item.type] || item.type;
+        const a = AUTHORITY_RU[item.authority] || item.authority;
+        meta.textContent = `${t} · ${item.profile} · ${a}`;
+      } else {
+        meta.textContent = item.error || "—";
+      }
+      body.appendChild(meta);
+      row.appendChild(body);
+
+      const arrow = document.createElement("div");
+      arrow.className = "arrow";
+      arrow.textContent = "›";
+      row.appendChild(arrow);
+
+      row.addEventListener("click", () => openPersonChart(item.id));
+      list.appendChild(row);
+    });
+  }
+
+  async function openPersonChart(personId) {
+    showResultLoading();
+    showScreen("screen-result");
+    viewedChart = { mode: "env", id: personId };
+    document.getElementById("btn-delete-person").style.display = "";
+
+    try {
+      const res = await fetch(`${API_URL}/environment/chart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ init_data: tg ? tg.initData : "", id: personId }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        renderResultError(errBody.detail || `Ошибка ${res.status}`);
+        return;
+      }
+      const data = await res.json();
+      renderResult(data);
+    } catch (e) {
+      renderResultError("Сервер недоступен");
+    }
+  }
+
+  async function loadPersonForEdit(personId) {
+    // Грузим чарт чтобы получить birth-данные для пред-заполнения
+    try {
+      const res = await fetch(`${API_URL}/environment/chart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ init_data: tg ? tg.initData : "", id: personId }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      openCalcForm("env-edit", {
+        id: personId,
+        name: data.name,
+        relationship: data.relationship,
+        ...data.birth,
+      });
+    } catch (e) {
+      showCalcError("Не удалось загрузить данные");
+    }
+  }
+
+  // Кнопка «Удалить из окружения»
+  document.getElementById("btn-delete-person").addEventListener("click", async () => {
+    if (!viewedChart || viewedChart.mode !== "env") return;
+    const ok = window.confirm("Удалить этого человека из окружения?");
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`${API_URL}/environment/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ init_data: tg ? tg.initData : "", id: viewedChart.id }),
+      });
+      if (!res.ok) {
+        alert("Не удалось удалить");
+        return;
+      }
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+      showScreen("screen-environment");
+      loadEnvironment();
+    } catch (e) {
+      alert("Сервер недоступен");
+    }
+  });
+
 </script>
 
 </body>
