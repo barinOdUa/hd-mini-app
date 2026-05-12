@@ -984,12 +984,12 @@
       <div class="arrow">›</div>
     </div>
 
-    <!-- Прогноз дня -->
+    <!-- Прогноз дня (загружается реальный из /forecast) -->
     <div class="section-title">Прогноз на сегодня</div>
-    <div class="daily">
-      <div class="date">6 мая · среда</div>
-      <div class="quote">«День, когда твоё "нет" громче твоего "да". Слушай Сакрал — он знает раньше головы.»</div>
-      <div class="more">Читать прогноз →</div>
+    <div class="daily" id="daily-card">
+      <div class="date" id="daily-date">…</div>
+      <div class="quote" id="daily-quote">Загружаем твой прогноз…</div>
+      <div class="more" id="daily-more" style="display:none">Читать прогноз →</div>
     </div>
 
     <!-- Продукты -->
@@ -1272,6 +1272,33 @@
   </div>
   <!-- /screen-environment -->
 
+  <!-- ─── ЭКРАН: ПРОГНОЗ ДНЯ ────────────────────────────────────────── -->
+  <div class="screen" id="screen-forecast">
+    <button class="back-link" data-back-to="screen-home">‹ На главную</button>
+
+    <div class="form-hero">
+      <h2>Твой <span class="accent">день</span></h2>
+      <p id="forecast-date-display">…</p>
+    </div>
+
+    <div class="error-box" id="forecast-error"></div>
+
+    <div id="forecast-loading" style="text-align:center;padding:40px;color:var(--text-dim);font-size:13px">
+      Генерируем прогноз… <br><span style="font-size:11px;opacity:0.7">это может занять до 10 секунд</span>
+    </div>
+
+    <div class="types-block" id="forecast-content" style="display:none">
+      <div class="text-content" id="forecast-text"></div>
+    </div>
+
+    <div class="actions" id="forecast-actions" style="display:none">
+      <button class="btn secondary" id="btn-pick-forecast-date">📅 Прогноз за другой день</button>
+      <input type="date" id="forecast-date-input" style="display:none">
+      <button class="btn secondary" data-back-to="screen-home">← На главную</button>
+    </div>
+  </div>
+  <!-- /screen-forecast -->
+
   <!-- ─── МОДАЛКА: подписка Premium ───────────────────────────────────── -->
   <div class="modal-backdrop" id="modal-buy-env">
     <div class="modal">
@@ -1306,7 +1333,7 @@
 
 <script>
   // ── URL бэкенда (поменять на свой стабильный когда настроим named tunnel) ─────
-  const API_URL = "https://robin-retailer-propose-cardiac.trycloudflare.com";
+  const API_URL = "https://believe-probability-fall-motorcycles.trycloudflare.com";
 
   // ── Переводы для отображения ──────────────────────────────────────────────────
   const TYPE_RU = {
@@ -1402,9 +1429,164 @@
   }
 
   loadProfile();
+  loadTodayForecastPreview();
+
+  // ── Прогноз дня ──────────────────────────────────────────────────────────────
+  const WEEKDAYS_RU = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
+  const MONTHS_RU = ["янв", "фев", "мар", "апр", "мая", "июня", "июля", "авг", "сен", "окт", "ноя", "дек"];
+  const MONTHS_FULL_RU = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+
+  function todayIso() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
+  function formatDateShort(iso) {
+    const [y, m, d] = iso.split("-").map(Number);
+    const dt = new Date(y, m-1, d);
+    return `${d} ${MONTHS_RU[m-1]} · ${WEEKDAYS_RU[dt.getDay()]}`;
+  }
+  function formatDateFull(iso) {
+    const [y, m, d] = iso.split("-").map(Number);
+    return `${d} ${MONTHS_FULL_RU[m-1]} ${y}`;
+  }
+
+  // Кеш прогнозов в памяти (чтобы при возврате на экран не дёргать API)
+  const forecastCache = {};
+
+  async function loadTodayForecastPreview() {
+    const dateEl = document.getElementById("daily-date");
+    const quoteEl = document.getElementById("daily-quote");
+    const moreEl = document.getElementById("daily-more");
+
+    const iso = todayIso();
+    dateEl.textContent = formatDateShort(iso);
+
+    if (!tg || !tg.initData) {
+      quoteEl.textContent = "«День, когда твоё нет громче твоего да. Слушай Сакрал — он знает раньше головы.» (демо)";
+      moreEl.style.display = "";
+      return;
+    }
+
+    if (currentProfile && currentProfile.has_profile === false) {
+      quoteEl.textContent = "Чтобы получать прогноз дня, сначала рассчитай свой бодиграф.";
+      moreEl.style.display = "none";
+      return;
+    }
+
+    try {
+      const data = await fetchForecast(iso);
+      if (!data) {
+        quoteEl.textContent = "Не удалось загрузить прогноз. Попробуй позже.";
+        return;
+      }
+      // Превью = первое предложение или ~140 символов
+      const preview = makePreview(data.text);
+      quoteEl.textContent = preview;
+      moreEl.style.display = "";
+    } catch (e) {
+      quoteEl.textContent = "Сервер недоступен. Попробуй обновить страницу.";
+    }
+  }
+
+  function makePreview(fullText) {
+    if (!fullText) return "";
+    // Берём первый абзац и обрезаем до ~140 символов на словах
+    const firstPara = fullText.split(/\n\n+/)[0].trim();
+    if (firstPara.length <= 160) return firstPara;
+    const cut = firstPara.slice(0, 160);
+    const lastSpace = cut.lastIndexOf(" ");
+    return (lastSpace > 100 ? cut.slice(0, lastSpace) : cut) + "…";
+  }
+
+  async function fetchForecast(dateIso) {
+    if (forecastCache[dateIso]) return forecastCache[dateIso];
+    if (!tg || !tg.initData) return null;
+    const res = await fetch(`${API_URL}/forecast`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ init_data: tg.initData, date: dateIso }),
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.detail || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    forecastCache[dateIso] = data;
+    return data;
+  }
+
+  // Клик по карточке прогноза на главной — открывает полный экран
+  document.getElementById("daily-card").addEventListener("click", () => {
+    openForecast(todayIso());
+  });
+
+  async function openForecast(dateIso) {
+    showScreen("screen-forecast");
+    const errBox = document.getElementById("forecast-error");
+    const loading = document.getElementById("forecast-loading");
+    const content = document.getElementById("forecast-content");
+    const actions = document.getElementById("forecast-actions");
+    const dateDisplay = document.getElementById("forecast-date-display");
+
+    errBox.classList.remove("show");
+    loading.style.display = "";
+    content.style.display = "none";
+    actions.style.display = "none";
+    dateDisplay.textContent = formatDateFull(dateIso);
+
+    if (!tg || !tg.initData) {
+      loading.style.display = "none";
+      errBox.textContent = "Открой через Telegram-бота, чтобы увидеть прогноз";
+      errBox.classList.add("show");
+      return;
+    }
+
+    try {
+      const data = await fetchForecast(dateIso);
+      if (!data) throw new Error("Нет данных");
+      renderForecastText(data.text);
+      loading.style.display = "none";
+      content.style.display = "";
+      actions.style.display = "";
+    } catch (e) {
+      loading.style.display = "none";
+      errBox.textContent = e.message || "Не удалось загрузить прогноз";
+      errBox.classList.add("show");
+      actions.style.display = "";
+    }
+  }
+
+  function renderForecastText(fullText) {
+    const container = document.getElementById("forecast-text");
+    container.replaceChildren();
+    fullText.split(/\n\n+/).forEach(para => {
+      const trimmed = para.trim();
+      if (!trimmed) return;
+      const p = document.createElement("p");
+      p.textContent = trimmed;
+      container.appendChild(p);
+    });
+  }
+
+  // Кнопка «Прогноз за другой день» — показываем нативный date picker
+  document.getElementById("btn-pick-forecast-date").addEventListener("click", () => {
+    const input = document.getElementById("forecast-date-input");
+    input.max = todayIso();  // не разрешаем будущее
+    input.style.display = "";
+    input.focus();
+    input.click();
+    // Для iOS — попытка открыть пикер
+    if (input.showPicker) {
+      try { input.showPicker(); } catch (e) {}
+    }
+  });
+  document.getElementById("forecast-date-input").addEventListener("change", (e) => {
+    const v = e.target.value;
+    if (v) openForecast(v);
+  });
 
   // ── Навигация между экранами ──────────────────────────────────────────────────
-  const screens = ["screen-home", "screen-calc", "screen-result", "screen-environment", "screen-compatibility"];
+  const screens = ["screen-home", "screen-calc", "screen-result", "screen-environment", "screen-compatibility", "screen-forecast"];
   function showScreen(id) {
     screens.forEach(s => {
       document.getElementById(s).classList.toggle("active", s === id);
@@ -1452,6 +1634,8 @@
         } else {
           showScreen("screen-environment");
         }
+      } else if (active === "screen-forecast") {
+        showScreen("screen-home");
       } else {
         showScreen("screen-home");
       }
