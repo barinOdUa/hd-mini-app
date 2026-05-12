@@ -1333,7 +1333,14 @@
 
 <script>
   // ── URL бэкенда (поменять на свой стабильный когда настроим named tunnel) ─────
-  const API_URL = "https://believe-probability-fall-motorcycles.trycloudflare.com";
+  // Стабильный URL ngrok free static domain — больше не меняется при рестарте
+  const API_URL = "https://plop-blog-mummify.ngrok-free.dev";
+
+  // Хедер для пропуска ngrok-интерстициала (предупреждения для бесплатного тарифа)
+  const FETCH_HEADERS = {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+  };
 
   // ── Переводы для отображения ──────────────────────────────────────────────────
   const TYPE_RU = {
@@ -1414,7 +1421,7 @@
     try {
       const res = await fetch(`${API_URL}/me`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: FETCH_HEADERS,
         body: JSON.stringify({ init_data: tg.initData }),
       });
       if (!res.ok) {
@@ -1503,7 +1510,7 @@
     if (!tg || !tg.initData) return null;
     const res = await fetch(`${API_URL}/forecast`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: FETCH_HEADERS,
       body: JSON.stringify({ init_data: tg.initData, date: dateIso }),
     });
     if (!res.ok) {
@@ -1735,7 +1742,7 @@
     try {
       const res = await fetch(`${API_URL}/my-chart`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: FETCH_HEADERS,
         body: JSON.stringify({ init_data: tg ? tg.initData : "" }),
       });
       if (!res.ok) {
@@ -1813,7 +1820,7 @@
 
       const res = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: FETCH_HEADERS,
         body: JSON.stringify(body),
       });
 
@@ -1942,7 +1949,7 @@
     try {
       const res = await fetch(`${API_URL}/environment/list`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: FETCH_HEADERS,
         body: JSON.stringify({ init_data: tg.initData }),
       });
       if (!res.ok) {
@@ -2060,7 +2067,7 @@
     try {
       const res = await fetch(`${API_URL}/environment/chart`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: FETCH_HEADERS,
         body: JSON.stringify({ init_data: tg ? tg.initData : "", id: personId }),
       });
       if (!res.ok) {
@@ -2080,7 +2087,7 @@
     try {
       const res = await fetch(`${API_URL}/environment/chart`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: FETCH_HEADERS,
         body: JSON.stringify({ init_data: tg ? tg.initData : "", id: personId }),
       });
       if (!res.ok) return;
@@ -2158,7 +2165,7 @@
     try {
       const res = await fetch(`${API_URL}/environment/compatibility`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: FETCH_HEADERS,
         body: JSON.stringify({ init_data: tg ? tg.initData : "", person_id: personId }),
       });
       if (!res.ok) {
@@ -2496,7 +2503,7 @@
     try {
       const res = await fetch(`${API_URL}/environment/delete`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: FETCH_HEADERS,
         body: JSON.stringify({ init_data: tg ? tg.initData : "", id: viewedChart.id }),
       });
       if (!res.ok) {
