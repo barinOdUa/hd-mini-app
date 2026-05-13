@@ -843,6 +843,95 @@
     border-top: 1px solid rgba(212, 172, 107, 0.12);
   }
 
+  /* ─── Детальный экран продукта ──────────────────────────────────────── */
+  .product-hero {
+    text-align: center;
+    padding: 18px 0 22px;
+  }
+  .product-hero .icon-big {
+    font-size: 56px;
+    margin-bottom: 12px;
+    line-height: 1;
+    filter: drop-shadow(0 0 18px rgba(212, 172, 107, 0.3));
+  }
+  .product-hero h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+  }
+  .product-hero h2 .accent { color: var(--gold-bright); font-style: italic; }
+  .product-hero .price-line {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    color: var(--gold-bright);
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .product-hero .price-line .interval {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-style: italic;
+    font-family: 'Raleway', sans-serif;
+    margin-left: 4px;
+  }
+
+  .product-section {
+    background: rgba(20, 8, 31, 0.5);
+    border: 1px solid rgba(212, 172, 107, 0.18);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .product-section .label {
+    font-size: 10px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    font-weight: 400;
+  }
+  .product-section p {
+    font-size: 13.5px;
+    color: var(--text);
+    line-height: 1.65;
+    margin-bottom: 12px;
+  }
+  .product-section p:last-child { margin-bottom: 0; }
+  .product-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .product-section li {
+    font-size: 13.5px;
+    color: var(--text);
+    line-height: 1.55;
+    padding: 8px 0 8px 22px;
+    position: relative;
+    border-bottom: 1px solid rgba(212, 172, 107, 0.08);
+  }
+  .product-section li:last-child { border-bottom: none; }
+  .product-section li::before {
+    content: "✦";
+    position: absolute;
+    left: 0;
+    top: 10px;
+    color: var(--gold);
+    font-size: 11px;
+  }
+
+  /* Sticky buy-кнопка внизу */
+  .buy-sticky {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(180deg, transparent, var(--bg) 30%);
+    padding: 24px 0 12px;
+    margin-top: 18px;
+  }
+
   /* ─── Модалка ────────────────────────────────────────────────────────── */
   .modal-backdrop {
     position: fixed;
@@ -996,7 +1085,7 @@
     <div class="section-title">Глубже узнать себя</div>
     <div class="products">
 
-      <div class="product featured">
+      <div class="product featured" data-product="energy_card">
         <span class="badge">Хит</span>
         <div class="icon">🎴</div>
         <div class="body">
@@ -1008,7 +1097,7 @@
         </div>
       </div>
 
-      <div class="product">
+      <div class="product" data-product="diagnostic">
         <div class="icon">🔍</div>
         <div class="body">
           <div class="name">Диагностика</div>
@@ -1019,7 +1108,7 @@
         </div>
       </div>
 
-      <div class="product">
+      <div class="product" data-product="full_reading">
         <div class="icon">📖</div>
         <div class="body">
           <div class="name">Полная расшифровка</div>
@@ -1030,7 +1119,7 @@
         </div>
       </div>
 
-      <div class="product">
+      <div class="product" data-product="compatibility">
         <div class="icon">☯</div>
         <div class="body">
           <div class="name">Совместимость</div>
@@ -1041,7 +1130,7 @@
         </div>
       </div>
 
-      <div class="product">
+      <div class="product" data-product="child_reading">
         <div class="icon">👶</div>
         <div class="body">
           <div class="name">Расшифровка для ребёнка</div>
@@ -1052,7 +1141,7 @@
         </div>
       </div>
 
-      <div class="product">
+      <div class="product" data-product="forecast_subscription">
         <div class="icon">🌀</div>
         <div class="body">
           <div class="name">Прогноз дня</div>
@@ -1298,6 +1387,43 @@
     </div>
   </div>
   <!-- /screen-forecast -->
+
+  <!-- ─── ЭКРАН: ДЕТАЛИ ПРОДУКТА ──────────────────────────────────────── -->
+  <div class="screen" id="screen-product">
+    <button class="back-link" data-back-to="screen-home">‹ К продуктам</button>
+
+    <div class="product-hero">
+      <div class="icon-big" id="prod-icon">🎴</div>
+      <h2 id="prod-title">Название</h2>
+      <div class="price-line">
+        <span id="prod-price">€0,00</span><span class="interval" id="prod-interval"></span>
+      </div>
+    </div>
+
+    <!-- «Для кого» -->
+    <div class="product-section" id="prod-for-section">
+      <div class="label">Для кого</div>
+      <p id="prod-for"></p>
+    </div>
+
+    <!-- «Что внутри» -->
+    <div class="product-section" id="prod-inside-section">
+      <div class="label">Что внутри</div>
+      <ul id="prod-inside"></ul>
+    </div>
+
+    <!-- «Результат» -->
+    <div class="product-section" id="prod-result-section">
+      <div class="label">Что ты получишь</div>
+      <p id="prod-result"></p>
+    </div>
+
+    <div class="buy-sticky">
+      <button class="btn" id="btn-buy-product">Купить за €0,00</button>
+      <button class="btn secondary" data-back-to="screen-home" style="margin-top:8px">← Назад</button>
+    </div>
+  </div>
+  <!-- /screen-product -->
 
   <!-- ─── МОДАЛКА: подписка Premium ───────────────────────────────────── -->
   <div class="modal-backdrop" id="modal-buy-env">
@@ -1611,6 +1737,54 @@
     openForecast(todayIso());
   });
 
+  // ── Карточки продуктов ─────────────────────────────────────────────────────
+  document.querySelectorAll("[data-product]").forEach(card => {
+    card.addEventListener("click", () => {
+      const productId = card.dataset.product;
+      openProductDetail(productId);
+    });
+  });
+
+  let currentProductId = null;
+
+  function openProductDetail(productId) {
+    const p = PRODUCTS[productId];
+    if (!p) return;
+    currentProductId = productId;
+
+    document.getElementById("prod-icon").textContent = p.icon;
+    document.getElementById("prod-title").textContent = p.title;
+    document.getElementById("prod-price").textContent = p.price;
+    document.getElementById("prod-interval").textContent = p.interval || "";
+
+    document.getElementById("prod-for").textContent = p.for;
+    document.getElementById("prod-result").textContent = p.result;
+
+    const insideList = document.getElementById("prod-inside");
+    insideList.replaceChildren();
+    (p.inside || []).forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      insideList.appendChild(li);
+    });
+
+    document.getElementById("btn-buy-product").textContent = p.buy_label || `Купить за ${p.price}`;
+
+    showScreen("screen-product");
+  }
+
+  // Кнопка «Купить» — пока ведёт в чат с @katrin_lopukhina
+  // (когда подключим Telegram Payments — заменится на реальную оплату)
+  document.getElementById("btn-buy-product").addEventListener("click", () => {
+    const p = PRODUCTS[currentProductId];
+    if (!p) return;
+    if (tg && tg.openTelegramLink) {
+      tg.openTelegramLink("https://t.me/katrin_lopukhina");
+    } else {
+      window.open("https://t.me/katrin_lopukhina", "_blank");
+    }
+  });
+
   // Запускаем загрузку превью прогноза ПОСЛЕ объявления всех зависимостей выше
   // (MONTHS_RU, WEEKDAYS_RU, fetchForecast, makePreview, todayIso, formatDateShort)
   loadTodayForecastPreview();
@@ -1702,7 +1876,112 @@
   });
 
   // ── Навигация между экранами ──────────────────────────────────────────────────
-  const screens = ["screen-home", "screen-calc", "screen-result", "screen-environment", "screen-compatibility", "screen-forecast"];
+  const screens = ["screen-home", "screen-calc", "screen-result", "screen-environment", "screen-compatibility", "screen-forecast", "screen-product"];
+
+  // ── Каталог продуктов ─────────────────────────────────────────────────────────
+  const PRODUCTS = {
+    energy_card: {
+      icon: "🎴",
+      title: "Карта Энергии",
+      price: "€1,99",
+      interval: "",
+      for: "Для тех, кто только знакомится со своим Дизайном и хочет начать с простого, без 22-страничных глубин. Ты получишь конкретные опоры — без HD-сленга и без воды.",
+      inside: [
+        "Твой профиль и как он проявляется в повседневности",
+        "Твой авторитет — как ты принимаешь решения, чтобы они не съедали тебя",
+        "Твоё Не-Я: где ты живёшь чужой жизнью, не замечая",
+        "Сильные центры — твоя энергия, на которую можно опереться",
+        "Открытые центры — где ты собираешь чужое",
+        "3 простых шага на неделю — то, что можно начать делать прямо завтра",
+      ],
+      result: "Короткий, ясный документ — 4-5 страниц без воды. Ты прочитаешь его за 15 минут, и у тебя появятся 3 опоры, по которым можно жить ближайшую неделю.",
+      buy_label: "Купить за €1,99",
+    },
+    diagnostic: {
+      icon: "🔍",
+      title: "Диагностика",
+      price: "€9,99",
+      interval: "",
+      for: "Если ты чувствуешь, что устаёшь там, где другие отдыхают. Если энергия утекает на людей, ситуации, обязательства — и ты не понимаешь, как её вернуть. Если хочется не просто знать о себе, а понять, в чём именно сейчас потеряна.",
+      inside: [
+        "10 вопросов про твою текущую жизнь — работа, отношения, тело, деньги",
+        "Каждый ответ разбирается через призму твоего Дизайна",
+        "Голосовые ответы — слушаешь как подкаст, можно за рулём или на прогулке",
+        "Карта точек утечки энергии — где именно ты сейчас отдаёшь больше, чем получаешь",
+        "Конкретные рекомендации, что в каждой точке делать",
+      ],
+      result: "Через 24 часа ты получишь развёрнутый разбор твоих ответов + аудио. Это диагноз: где ты сейчас, что тянет вниз, что усилить.",
+      buy_label: "Заказать диагностику · €9,99",
+    },
+    full_reading: {
+      icon: "📖",
+      title: "Полная расшифровка",
+      price: "€29,99",
+      interval: "",
+      for: "Для тех, кто хочет видеть всю картину целиком. Не один срез, не один аспект — весь твой Дизайн от и до. Это не короткая Карта Энергии, это глубокий, проработанный документ, к которому возвращаются.",
+      inside: [
+        "Тип + Профиль + Авторитет — развёрнуто, с примерами из твоей жизни",
+        "Все 9 центров — определённые и открытые, что каждый значит для тебя",
+        "Все твои каналы — твои таланты и темы, ради которых ты пришла",
+        "Ворота-активации — Солнце, Земля, Луна и другие планеты",
+        "Инкарнационный крест — твоя жизненная задача",
+        "Стратегия и эксперимент — как с этим жить",
+        "Готовые шаги на ближайшие 3 месяца",
+      ],
+      result: "PDF на 22 страницы. Картинка твоего бодиграфа, разбор каждого блока, твои таланты, твои уязвимости, что делать дальше. К нему возвращаются годами.",
+      buy_label: "Заказать расшифровку · €29,99",
+    },
+    compatibility: {
+      icon: "☯",
+      title: "Расшифровка совместимости",
+      price: "€19,99",
+      interval: "",
+      for: "Для любой пары — партнёр, ребёнок, родитель, близкий друг. Если хочется понять, что между вами на самом деле происходит на уровне энергии — куда вас тянет, где трётесь, что друг от друга получаете.",
+      inside: [
+        "Композитный бодиграф — ваша общая карта",
+        "Электромагнитные каналы — где между вами магия притяжения",
+        "Каналы доминирования — где вы похожи и можете выгореть",
+        "То, что только у тебя — твой вклад в связь",
+        "То, что только у партнёра — чем он/она тебя расширяет",
+        "Рекомендации по 3 сферам: близость, конфликт, быт",
+      ],
+      result: "PDF на ~12 страниц с разбором вашей пары и конкретными опорами для отношений.",
+      buy_label: "Заказать расшифровку · €19,99",
+    },
+    child_reading: {
+      icon: "👶",
+      title: "Расшифровка для ребёнка",
+      price: "€24,99",
+      interval: "",
+      for: "Для мам и пап, которые хотят видеть ребёнка как он есть — не как «надо», не как «удобно», а как уникальное существо со своей механикой. Если ты замечаешь, что советы общей педагогики не работают именно с твоим — это сюда.",
+      inside: [
+        "Тип ребёнка и как он проявляется в детстве",
+        "Авторитет — как ребёнок принимает решения и почему «через головы» не работает",
+        "Сильные и открытые центры — где он лидер, где впитывает других",
+        "Его таланты — на что опереться в обучении и развитии",
+        "Зоны давления — что для него тяжело, и почему нельзя ломать",
+        "Как ему говорить, чтобы доходило",
+      ],
+      result: "PDF-расшифровка специально под детский возраст — без взрослых терминов о «не-Я» и кризисах. Только потенциал, опоры, и язык общения.",
+      buy_label: "Заказать расшифровку · €24,99",
+    },
+    forecast_subscription: {
+      icon: "🌀",
+      title: "Прогноз дня",
+      price: "€4,99",
+      interval: "/мес",
+      for: "Для тех, кто хочет встречать каждый день немного осознаннее. Не как в гороскопе «всем подряд», а через свои ворота, свою Луну, свою сегодняшнюю погоду.",
+      inside: [
+        "Прогноз приходит каждое утро в выбранное тобой время",
+        "Главная тема дня — на что обратить внимание",
+        "Что сегодня усилено в твоей карте через транзиты планет",
+        "Как использовать день: работа, отношения, тело",
+        "Ритуал или практика на день — конкретное действие",
+      ],
+      result: "Каждое утро — твой персональный день в HD-оптике. Подписка месячная, можно отменить в любой момент. И ещё — в Mini App ты получаешь доступ к прогнозам на будущие дни (до конца подписки).",
+      buy_label: "Подключить за €4,99/мес",
+    },
+  };
   function showScreen(id) {
     screens.forEach(s => {
       document.getElementById(s).classList.toggle("active", s === id);
@@ -1751,6 +2030,8 @@
           showScreen("screen-environment");
         }
       } else if (active === "screen-forecast") {
+        showScreen("screen-home");
+      } else if (active === "screen-product") {
         showScreen("screen-home");
       } else {
         showScreen("screen-home");
