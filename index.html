@@ -1381,6 +1381,7 @@
     </div>
 
     <div class="actions" id="forecast-actions" style="display:none">
+      <button class="btn" id="btn-ask-question">💬 Задать вопрос боту</button>
       <button class="btn secondary" id="btn-pick-forecast-date">📅 Прогноз за другой день</button>
       <input type="date" id="forecast-date-input" style="display:none">
       <button class="btn secondary" data-back-to="screen-home">← На главную</button>
@@ -1986,6 +1987,36 @@
       container.appendChild(p);
     });
   }
+
+  // Кнопка «Задать вопрос боту»
+  document.getElementById("btn-ask-question").addEventListener("click", () => {
+    const hasSub = currentProfile && currentProfile.subscription && currentProfile.subscription.is_active;
+
+    if (!hasSub) {
+      // Нет подписки — показываем модалку Premium
+      showBuyEnvModal();
+      return;
+    }
+
+    // Есть подписка — объясняем, как задать вопрос, и закрываем Mini App
+    const message = "Сейчас закроется приложение и ты окажешься в чате с ботом. Просто напиши свой вопрос — бот ответит через твой Дизайн и сегодняшние транзиты планет.\n\nДоступно 3 вопроса в день.";
+
+    if (tg && tg.showPopup) {
+      tg.showPopup({
+        title: "Задать вопрос боту",
+        message: message,
+        buttons: [
+          { id: "ok", type: "default", text: "Открыть чат" },
+          { id: "cancel", type: "cancel" },
+        ],
+      }, (btnId) => {
+        if (btnId === "ok" && tg.close) tg.close();
+      });
+    } else if (tg && tg.close) {
+      // Fallback для старых версий Telegram без showPopup
+      if (confirm(message + "\n\nОткрыть чат сейчас?")) tg.close();
+    }
+  });
 
   // Кнопка «Прогноз за другой день» — показываем нативный date picker
   document.getElementById("btn-pick-forecast-date").addEventListener("click", () => {
