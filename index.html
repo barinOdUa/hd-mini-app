@@ -60,7 +60,8 @@
   /* Telegram header */
   .tg-header {
     background: #0A0612;
-    padding: 12px 16px 10px;
+    /* В fullscreen режиме отступаем от чёлки iPhone (env(safe-area-inset-top)) */
+    padding: max(12px, env(safe-area-inset-top, 12px)) 16px 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -397,7 +398,8 @@
     backdrop-filter: blur(20px);
     border-top: 1px solid rgba(212, 172, 107, 0.12);
     display: flex;
-    padding: 10px 0 22px;
+    /* Защита от нижнего индикатора iPhone в fullscreen */
+    padding: 10px 0 max(22px, env(safe-area-inset-bottom, 22px));
     justify-content: space-around;
   }
   .tab {
@@ -1605,6 +1607,11 @@
     tg.ready();
     tg.expand();
     tg.disableVerticalSwipes && tg.disableVerticalSwipes();
+
+    // Полный экран — для Telegram 8.0+ (без серой полоски Telegram сверху)
+    if (tg.requestFullscreen && tg.isVersionAtLeast && tg.isVersionAtLeast("8.0")) {
+      try { tg.requestFullscreen(); } catch (e) {}
+    }
   }
 
   // ── Обновляем карточку профиля по данным из /me ───────────────────────────────
