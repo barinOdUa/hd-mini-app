@@ -1465,80 +1465,99 @@
     const quoteEl = document.getElementById("daily-quote");
     const moreEl = document.getElementById("daily-more");
 
-    const iso = todayIso();
-    dateEl.textContent = formatDateShort(iso);
-
-    if (!tg || !tg.initData) {
-      quoteEl.textContent = "«День, когда твоё нет громче твоего да. Слушай Сакрал — он знает раньше головы.» (демо)";
-      moreEl.style.display = "";
-      return;
-    }
-
-    if (currentProfile && currentProfile.has_profile === false) {
-      quoteEl.textContent = "Чтобы получать прогноз дня, сначала рассчитай свой бодиграф.";
-      moreEl.style.display = "none";
-      return;
-    }
-
     try {
-      const data = await fetchForecast(iso);
-      if (!data) {
-        quoteEl.textContent = "Не удалось загрузить прогноз. Попробуй позже.";
+      const iso = todayIso();
+      dateEl.textContent = formatDateShort(iso);
+
+      if (!tg || !tg.initData) {
+        quoteEl.textContent = "«День, когда твоё нет громче твоего да. Слушай Сакрал — он знает раньше головы.» (демо)";
+        moreEl.style.display = "";
         return;
       }
-      // Превью = первое предложение или ~140 символов
-      const preview = makePreview(data.text);
+
+      if (currentProfile && currentProfile.has_profile === false) {
+        quoteEl.textContent = "Чтобы получать прогноз дня, сначала рассчитай свой бодиграф.";
+        moreEl.style.display = "none";
+        return;
+      }
+
+      const data = await fetchForecast(iso);
+      if (!data || !data.text) {
+        quoteEl.textContent = "Не удалось загрузить прогноз. Потяни вниз чтобы обновить.";
+        return;
+      }
+
+      let preview;
+      try {
+        preview = makePreview(data.text);
+      } catch (previewErr) {
+        // Если умный экстрактор упал — берём первые 160 символов
+        preview = (data.text || "").trim().slice(0, 160);
+      }
+
+      if (!preview || preview.length < 5) {
+        // Совсем пусто — fallback на простое начало
+        preview = (data.text || "").trim().slice(0, 160);
+      }
+
       quoteEl.textContent = preview;
       moreEl.style.display = "";
     } catch (e) {
-      quoteEl.textContent = "Сервер недоступен. Попробуй обновить страницу.";
+      // Любая ошибка — показываем её саму, чтобы понять что не так
+      const msg = (e && e.message) ? e.message : String(e);
+      quoteEl.textContent = "Ошибка: " + msg.slice(0, 100);
     }
   }
 
   function makePreview(fullText) {
-    if (!fullText) return "";
+    if (!fullText || typeof fullText !== "string") return "";
 
-    // Чистим декоративные тире и шапку с типом (она уже есть в карточке профиля)
-    const cleaned = fullText
-      .replace(/^[─━—]{3,}.*$/gm, "")
-      .replace(/[─━—]{6,}/g, "")
-      .replace(/^.*?(Твой день|🌅).*$/m, "")  // строка-заголовок прогноза
-      .trim();
+    // Чистим текст построчно: убираем строки с тире, заголовки, эмодзи-маркеры
+    const lines = fullText.split("\n");
+    const cleanLines = [];
+    for (const ln of lines) {
+      const t = ln.trim();
+      if (!t) { cleanLines.push(""); continue; }
+      if (/^[─━—\-]{3,}/.test(t)) continue;                        // ────
+      if (/^🌅/.test(t)) continue;                                  // дата с восходом
+      if (/^Твой день[,:]?\s/.test(t)) continue;                    // дубль заголовка
+      if (/^[✨⚡💼🌙🌀☀️🌅⭐]{1,2}\s/.test(t) && t.length < 30) continue; // короткие подзаголовки разделов с эмодзи
+      cleanLines.push(t);
+    }
+    const cleaned = cleanLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    if (!cleaned) return "";
 
-    // Разбиваем на предложения с сохранением знаков
-    const sentences = (cleaned.match(/[^.!?…\n]+[.!?…]+/g) || [])
+    // Извлекаем все предложения
+    const sentenceRegex = /[^.!?…]+[.!?…]+/g;
+    const sentences = (cleaned.match(sentenceRegex) || [])
       .map(s => s.trim())
       .filter(s => s.length > 0);
 
-    // 1. Вопросы — самое цепкое. Берём короткий, ближе к концу
-    const questions = sentences.filter(s =>
-      s.endsWith("?") && s.length >= 40 && s.length <= 200
+    // 1. Цепкий вопрос
+    const goodQuestion = sentences.find(s =>
+      s.endsWith("?") && s.length >= 30 && s.length <= 200
     );
-    if (questions.length > 0) {
-      return questions[questions.length - 1];
-    }
+    if (goodQuestion) return goodQuestion;
 
-    // 2. Последнее короткое предложение из последнего абзаца — обычно самое сильное
+    // 2. Последнее предложение из последнего абзаца
     const paragraphs = cleaned.split(/\n\n+/).filter(p => p.trim());
     if (paragraphs.length > 0) {
       const lastPara = paragraphs[paragraphs.length - 1];
-      const lastSentences = (lastPara.match(/[^.!?…\n]+[.!?…]+/g) || [])
+      const lastSents = (lastPara.match(sentenceRegex) || [])
         .map(s => s.trim())
-        .filter(s => s.length >= 40 && s.length <= 200);
-      if (lastSentences.length > 0) {
-        return lastSentences[lastSentences.length - 1];
-      }
+        .filter(s => s.length >= 30 && s.length <= 200);
+      if (lastSents.length > 0) return lastSents[lastSents.length - 1];
     }
 
-    // 3. Fallback — первое подходящее предложение из всего текста
-    const candidate = sentences.find(s => s.length >= 40 && s.length <= 200);
-    if (candidate) return candidate;
+    // 3. Любое подходящее предложение
+    const anyGood = sentences.find(s => s.length >= 30 && s.length <= 200);
+    if (anyGood) return anyGood;
 
-    // 4. Совсем последний рубеж — обрезка по словам
+    // 4. Обрезка по словам
     if (cleaned.length <= 160) return cleaned;
     const cut = cleaned.slice(0, 160);
     const lastSpace = cut.lastIndexOf(" ");
-    return (lastSpace > 100 ? cut.slice(0, lastSpace) : cut) + "…";
+    return (lastSpace > 80 ? cut.slice(0, lastSpace) : cut) + "…";
   }
 
   async function fetchForecast(dateIso) {
