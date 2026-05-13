@@ -1515,7 +1515,9 @@
     });
     if (!res.ok) {
       const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.detail || `HTTP ${res.status}`);
+      const err = new Error(errBody.detail || `HTTP ${res.status}`);
+      err.status = res.status;
+      throw err;
     }
     const data = await res.json();
     forecastCache[dateIso] = data;
@@ -1557,6 +1559,14 @@
       actions.style.display = "";
     } catch (e) {
       loading.style.display = "none";
+      // 402 — попытка взять будущий прогноз без подписки
+      if (e.status === 402 || (e.message && e.message.includes("Premium"))) {
+        errBox.textContent = e.message || "Нужна Premium подписка";
+        errBox.classList.add("show");
+        actions.style.display = "";
+        showBuyEnvModal();  // та же модалка покупки Premium
+        return;
+      }
       errBox.textContent = e.message || "Не удалось загрузить прогноз";
       errBox.classList.add("show");
       actions.style.display = "";
@@ -1566,7 +1576,15 @@
   function renderForecastText(fullText) {
     const container = document.getElementById("forecast-text");
     container.replaceChildren();
-    fullText.split(/\n\n+/).forEach(para => {
+
+    // Очищаем декоративные «————» которые криво смотрятся на узком экране
+    const cleaned = fullText
+      .replace(/^[─━—]{3,}.*$/gm, "")        // убираем строки только из тире
+      .replace(/[─━—]{6,}/g, "")               // убираем длинные тире-полоски внутри строк
+      .replace(/\n{3,}/g, "\n\n")              // схлопываем тройные переносы
+      .trim();
+
+    cleaned.split(/\n\n+/).forEach(para => {
       const trimmed = para.trim();
       if (!trimmed) return;
       const p = document.createElement("p");
@@ -1578,11 +1596,16 @@
   // Кнопка «Прогноз за другой день» — показываем нативный date picker
   document.getElementById("btn-pick-forecast-date").addEventListener("click", () => {
     const input = document.getElementById("forecast-date-input");
-    input.max = todayIso();  // не разрешаем будущее
+    // По умолчанию max — сегодня. Если есть подписка — до конца подписки.
+    let maxDate = todayIso();
+    if (currentProfile && currentProfile.subscription && currentProfile.subscription.is_active) {
+      const subEnd = currentProfile.subscription.end_date;
+      if (subEnd && subEnd > maxDate) maxDate = subEnd;
+    }
+    input.max = maxDate;
     input.style.display = "";
     input.focus();
     input.click();
-    // Для iOS — попытка открыть пикер
     if (input.showPicker) {
       try { input.showPicker(); } catch (e) {}
     }
