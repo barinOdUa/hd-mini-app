@@ -1533,16 +1533,18 @@
   function makePreview(fullText) {
     if (!fullText || typeof fullText !== "string") return "";
 
-    // Чистим текст построчно: убираем строки с тире, заголовки, эмодзи-маркеры
+    // Чистим текст построчно: убираем разделители, заголовок, и любые строки-подзаголовки.
+    // Подзаголовок = короткая строка (< 40 символов), не заканчивающаяся знаком предложения.
+    // Это покрывает «✨ Тема дня», «🌿 Вопрос дня», «💼 Работа / реализация» и т.п.
     const lines = fullText.split("\n");
     const cleanLines = [];
     for (const ln of lines) {
       const t = ln.trim();
       if (!t) { cleanLines.push(""); continue; }
-      if (/^[─━—\-]{3,}/.test(t)) continue;                        // ────
-      if (/^🌅/.test(t)) continue;                                  // дата с восходом
-      if (/^Твой день[,:]?\s/.test(t)) continue;                    // дубль заголовка
-      if (/^[✨⚡💼🌙🌀☀️🌅⭐]{1,2}\s/.test(t) && t.length < 30) continue; // короткие подзаголовки разделов с эмодзи
+      if (/^[─━—\-]{3,}/.test(t)) continue;                  // декоративные ────
+      if (/^🌅/.test(t)) continue;                            // дата с восходом
+      if (/^Твой день[,:]?\s/.test(t)) continue;              // дубль заголовка
+      if (t.length < 40 && !/[.!?…»"]$/.test(t)) continue;   // короткий заголовок без точки
       cleanLines.push(t);
     }
     const cleaned = cleanLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
