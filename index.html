@@ -1388,6 +1388,53 @@
   </div>
   <!-- /screen-forecast -->
 
+  <!-- ─── ЭКРАН: ПРОФИЛЬ ──────────────────────────────────────────────── -->
+  <div class="screen" id="screen-profile">
+    <div class="form-hero">
+      <h2>Твой <span class="accent">кабинет</span></h2>
+      <p>История твоих заказов и подписок</p>
+    </div>
+
+    <!-- Карточка моего профиля -->
+    <div class="my-card" id="profile-card-mirror" style="cursor:pointer">
+      <div class="mini-bg">
+        <svg viewBox="0 0 36 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="18,3 28,13 18,23 8,13" stroke="#D4AC6B" stroke-width="0.8" fill="rgba(212,172,107,0.08)"/>
+          <rect x="13" y="23" width="10" height="10" stroke="#D4AC6B" stroke-width="0.8" fill="rgba(212,172,107,0.04)"/>
+          <polygon points="18,33 26,41 18,49 10,41" stroke="#D4AC6B" stroke-width="0.8" fill="rgba(212,172,107,0.08)"/>
+          <circle cx="18" cy="13" r="1.2" fill="#E5C58A"/>
+          <circle cx="18" cy="41" r="1.2" fill="#E5C58A"/>
+        </svg>
+      </div>
+      <div class="info">
+        <div class="label" id="profile-mirror-label">Бодиграф</div>
+        <div class="name" id="profile-mirror-name">…</div>
+        <div class="meta" id="profile-mirror-meta">&nbsp;</div>
+      </div>
+      <div class="arrow">›</div>
+    </div>
+
+    <!-- Подписка -->
+    <div class="product-section" id="profile-subscription-section">
+      <div class="label">Подписка</div>
+      <p id="profile-subscription-status">…</p>
+    </div>
+
+    <!-- История покупок -->
+    <div class="product-section" id="profile-history-section">
+      <div class="label">Мои заказы</div>
+      <p id="profile-history-empty" style="color:var(--text-dim);font-style:italic">
+        У тебя пока нет заказов. Загляни на главную — там все продукты.
+      </p>
+      <ul id="profile-history-list" style="display:none"></ul>
+    </div>
+
+    <div class="actions">
+      <button class="btn secondary" data-back-to="screen-home">← На главную</button>
+    </div>
+  </div>
+  <!-- /screen-profile -->
+
   <!-- ─── ЭКРАН: ДЕТАЛИ ПРОДУКТА ──────────────────────────────────────── -->
   <div class="screen" id="screen-product">
     <button class="back-link" data-back-to="screen-home">‹ К продуктам</button>
@@ -1437,19 +1484,19 @@
 
   <!-- Bottom nav -->
   <div class="tabs">
-    <button class="tab active">
+    <button class="tab active" data-tab="home">
       <div class="ico">✦</div>
       <div>Главная</div>
     </button>
-    <button class="tab">
+    <button class="tab" data-tab="bodygraph">
       <div class="ico">◈</div>
       <div>Бодиграф</div>
     </button>
-    <button class="tab">
+    <button class="tab" data-tab="forecast">
       <div class="ico">☾</div>
       <div>Прогноз</div>
     </button>
-    <button class="tab">
+    <button class="tab" data-tab="profile">
       <div class="ico">✧</div>
       <div>Профиль</div>
     </button>
@@ -1785,6 +1832,76 @@
     }
   });
 
+  // ── Нижняя навигация ──────────────────────────────────────────────────────────
+  document.querySelectorAll(".tab[data-tab]").forEach(tab => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.tab;
+      handleTabClick(target);
+    });
+  });
+
+  function handleTabClick(tabName) {
+    if (tabName === "home") {
+      showScreen("screen-home");
+    } else if (tabName === "bodygraph") {
+      // Если есть бодиграф — показываем его. Иначе — форма.
+      if (currentProfile && currentProfile.has_profile) {
+        openMyChartView();
+      } else {
+        openCalcForm("self", { name: currentProfile?.telegram_first_name || "" });
+      }
+    } else if (tabName === "forecast") {
+      openForecast(todayIso());
+    } else if (tabName === "profile") {
+      openProfileScreen();
+    }
+  }
+
+  // ── Экран профиля (кабинет) ───────────────────────────────────────────────────
+  function openProfileScreen() {
+    // Дублируем карточку профиля из главной (имя + тип) в экран
+    const mirrorLabel = document.getElementById("profile-mirror-label");
+    const mirrorName = document.getElementById("profile-mirror-name");
+    const mirrorMeta = document.getElementById("profile-mirror-meta");
+
+    if (currentProfile && currentProfile.has_profile) {
+      mirrorLabel.textContent = "Твой бодиграф";
+      mirrorName.textContent = currentProfile.name || "—";
+      const t = TYPE_RU[currentProfile.type] || currentProfile.type;
+      const a = AUTHORITY_RU[currentProfile.authority] || currentProfile.authority;
+      mirrorMeta.textContent = `${t} · ${currentProfile.profile} · ${a}`;
+    } else {
+      mirrorLabel.textContent = "Бодиграф";
+      mirrorName.textContent = "Ещё не рассчитан";
+      mirrorMeta.textContent = "Тапни, чтобы рассчитать →";
+    }
+
+    // Статус подписки
+    const subStatus = document.getElementById("profile-subscription-status");
+    if (currentProfile && currentProfile.subscription && currentProfile.subscription.is_active) {
+      const endDate = currentProfile.subscription.end_date || "";
+      const endDateRu = endDate ? formatDateFull(endDate) : "—";
+      subStatus.textContent = `Активна до ${endDateRu}. Тебе доступны будущие прогнозы и безлимитное окружение.`;
+    } else {
+      subStatus.textContent = "Подписка не активна. Подключи Premium €8,99/мес — получишь прогноз дня и безлимитное окружение.";
+    }
+
+    // История покупок — пока пустая, подключим в следующих шагах
+    document.getElementById("profile-history-empty").style.display = "";
+    document.getElementById("profile-history-list").style.display = "none";
+
+    showScreen("screen-profile");
+  }
+
+  // Клик по карточке профиля внутри экрана — переход к бодиграфу или форме
+  document.getElementById("profile-card-mirror").addEventListener("click", () => {
+    if (currentProfile && currentProfile.has_profile) {
+      openMyChartView();
+    } else {
+      openCalcForm("self", { name: currentProfile?.telegram_first_name || "" });
+    }
+  });
+
   // Запускаем загрузку превью прогноза ПОСЛЕ объявления всех зависимостей выше
   // (MONTHS_RU, WEEKDAYS_RU, fetchForecast, makePreview, todayIso, formatDateShort)
   loadTodayForecastPreview();
@@ -1876,7 +1993,7 @@
   });
 
   // ── Навигация между экранами ──────────────────────────────────────────────────
-  const screens = ["screen-home", "screen-calc", "screen-result", "screen-environment", "screen-compatibility", "screen-forecast", "screen-product"];
+  const screens = ["screen-home", "screen-calc", "screen-result", "screen-environment", "screen-compatibility", "screen-forecast", "screen-product", "screen-profile"];
 
   // ── Каталог продуктов ─────────────────────────────────────────────────────────
   const PRODUCTS = {
@@ -1982,6 +2099,18 @@
       buy_label: "Подключить за €4,99/мес",
     },
   };
+  // Маппинг экрана на активную вкладку нижней навигации
+  const SCREEN_TO_TAB = {
+    "screen-home": "home",
+    "screen-calc": null,            // нет активной вкладки во время формы
+    "screen-result": "bodygraph",   // просмотр чарта = бодиграф
+    "screen-environment": null,
+    "screen-compatibility": null,
+    "screen-forecast": "forecast",
+    "screen-product": null,
+    "screen-profile": "profile",
+  };
+
   function showScreen(id) {
     screens.forEach(s => {
       document.getElementById(s).classList.toggle("active", s === id);
@@ -1992,6 +2121,11 @@
       if (id === "screen-home") tg.BackButton.hide();
       else tg.BackButton.show();
     }
+    // Подсветка активной вкладки внизу
+    const activeTab = SCREEN_TO_TAB[id];
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.classList.toggle("active", tab.dataset.tab === activeTab);
+    });
   }
 
   // Обычный data-back-to
@@ -2032,6 +2166,8 @@
       } else if (active === "screen-forecast") {
         showScreen("screen-home");
       } else if (active === "screen-product") {
+        showScreen("screen-home");
+      } else if (active === "screen-profile") {
         showScreen("screen-home");
       } else {
         showScreen("screen-home");
