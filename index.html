@@ -1407,6 +1407,20 @@
   let viewedChart = null;          // {mode: "self"|"env", id: number|null} — что показано на result
 
   // ── /me ──────────────────────────────────────────────────────────────────────
+  async function tryFetchMe() {
+    const res = await fetch(`${API_URL}/me`, {
+      method: "POST",
+      headers: FETCH_HEADERS,
+      body: JSON.stringify({ init_data: tg.initData }),
+    });
+    if (!res.ok) {
+      const e = new Error(`HTTP ${res.status}`);
+      e.status = res.status;
+      throw e;
+    }
+    return res.json();
+  }
+
   async function loadProfile() {
     if (!tg || !tg.initData) {
       currentProfile = {
@@ -1418,20 +1432,26 @@
       renderProfile(currentProfile);
       return;
     }
-    try {
-      const res = await fetch(`${API_URL}/me`, {
-        method: "POST",
-        headers: FETCH_HEADERS,
-        body: JSON.stringify({ init_data: tg.initData }),
-      });
-      if (!res.ok) {
-        renderProfileError(`Ошибка ${res.status}`);
+
+    // Делаем 2 попытки с задержкой 1.5с — на случай кратковременных сетевых блипов
+    let lastErr = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        currentProfile = await tryFetchMe();
+        renderProfile(currentProfile);
         return;
+      } catch (e) {
+        lastErr = e;
+        if (attempt < 2) {
+          await new Promise(r => setTimeout(r, 1500));
+        }
       }
-      currentProfile = await res.json();
-      renderProfile(currentProfile);
-    } catch (e) {
-      renderProfileError("Сервер недоступен. Попробуй позже.");
+    }
+    // Обе попытки провалились
+    if (lastErr && lastErr.status) {
+      renderProfileError(`Ошибка ${lastErr.status}. Потяни вниз чтобы обновить.`);
+    } else {
+      renderProfileError("Сервер недоступен. Потяни вниз чтобы обновить.");
     }
   }
 
@@ -1440,7 +1460,7 @@
   // иначе TDZ-ошибка "Cannot access uninitialized variable" на const MONTHS_RU/WEEKDAYS_RU
 
   // ── Прогноз дня ──────────────────────────────────────────────────────────────
-  const WEEKDAYS_RU = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
+  const WEEKDAYS_RU = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"];
   const MONTHS_RU = ["янв", "фев", "мар", "апр", "мая", "июня", "июля", "авг", "сен", "окт", "ноя", "дек"];
   const MONTHS_FULL_RU = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
 
