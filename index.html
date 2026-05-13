@@ -932,6 +932,58 @@
     margin-top: 18px;
   }
 
+  /* Карточка тарифа (Подписка / Безлимит) */
+  .tier-card {
+    background: rgba(28, 14, 43, 0.5);
+    border: 1px solid rgba(212, 172, 107, 0.18);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .tier-card:last-child { margin-bottom: 0; }
+  .tier-card .tier-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .tier-card .tier-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    color: var(--gold-bright);
+    font-weight: 500;
+    letter-spacing: 0.2px;
+  }
+  .tier-card .tier-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .tier-card .tier-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .tier-card .tier-features li {
+    font-size: 12.5px;
+    color: var(--text-soft);
+    padding: 4px 0 4px 16px;
+    position: relative;
+    line-height: 1.4;
+    border-bottom: none;
+  }
+  .tier-card .tier-features li::before {
+    content: "·";
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    color: var(--gold);
+    font-size: 16px;
+  }
+
   /* ─── Модалка ────────────────────────────────────────────────────────── */
   .modal-backdrop {
     position: fixed;
@@ -1150,10 +1202,10 @@
         <div class="icon">✦</div>
         <div class="body">
           <div class="name">Премиум подписка</div>
-          <div class="desc">Прогноз дня + 3 вопроса боту + окружение без лимита</div>
+          <div class="desc">Прогноз дня + вопросы боту + расширенное окружение</div>
         </div>
         <div class="right">
-          <div class="price">€8,99/мес</div>
+          <div class="price">от €7,99/мес</div>
         </div>
       </div>
 
@@ -1465,6 +1517,12 @@
       <ul id="prod-inside"></ul>
     </div>
 
+    <!-- Сравнение тарифов (только для подписки) -->
+    <div class="product-section" id="prod-tiers-section" style="display:none">
+      <div class="label">Два варианта подписки</div>
+      <div id="prod-tiers"></div>
+    </div>
+
     <!-- «Результат» -->
     <div class="product-section" id="prod-result-section">
       <div class="label">Что ты получишь</div>
@@ -1481,8 +1539,8 @@
   <!-- ─── МОДАЛКА: подписка Premium ───────────────────────────────────── -->
   <div class="modal-backdrop" id="modal-buy-env">
     <div class="modal">
-      <h3>Премиум подписка · €8,99/мес</h3>
-      <p>Прогноз дня каждое утро + 3 вопроса боту в день + бодиграфы близких без ограничений.<br><br>Оплата прямо в приложении появится скоро. А пока — напиши Катрин, она оформит вручную:</p>
+      <h3>Премиум подписка · от €7,99/мес</h3>
+      <p>Два варианта: с 3 вопросами в день и до 15 человек в окружении (€7,99/мес) или безлимитная — сколько угодно вопросов и людей (€20/мес). В обоих — прогноз дня каждое утро.<br><br>Оплата прямо в приложении появится скоро. А пока — напиши Катрин, она оформит вручную:</p>
       <button class="btn" id="btn-modal-write">Написать Катрин</button>
       <button class="btn secondary" id="btn-modal-close">Закрыть</button>
     </div>
@@ -1821,6 +1879,43 @@
       insideList.appendChild(li);
     });
 
+    // Тарифы (если есть) — отдельная секция со сравнением
+    const tiersSection = document.getElementById("prod-tiers-section");
+    const tiersContainer = document.getElementById("prod-tiers");
+    tiersContainer.replaceChildren();
+    if (p.tiers && p.tiers.length > 0) {
+      p.tiers.forEach(t => {
+        const card = document.createElement("div");
+        card.className = "tier-card";
+
+        const header = document.createElement("div");
+        header.className = "tier-header";
+        const nameEl = document.createElement("div");
+        nameEl.className = "tier-name";
+        nameEl.textContent = t.name;
+        const priceEl = document.createElement("div");
+        priceEl.className = "tier-price";
+        priceEl.textContent = t.price;
+        header.appendChild(nameEl);
+        header.appendChild(priceEl);
+        card.appendChild(header);
+
+        const features = document.createElement("ul");
+        features.className = "tier-features";
+        (t.features || []).forEach(f => {
+          const li = document.createElement("li");
+          li.textContent = f;
+          features.appendChild(li);
+        });
+        card.appendChild(features);
+
+        tiersContainer.appendChild(card);
+      });
+      tiersSection.style.display = "";
+    } else {
+      tiersSection.style.display = "none";
+    }
+
     document.getElementById("btn-buy-product").textContent = p.buy_label || `Купить за ${p.price}`;
 
     showScreen("screen-product");
@@ -1904,9 +1999,14 @@
     if (currentProfile && currentProfile.subscription && currentProfile.subscription.is_active) {
       const endDate = currentProfile.subscription.end_date || "";
       const endDateRu = endDate ? formatDateFull(endDate) : "—";
-      subStatus.textContent = `Активна до ${endDateRu}. Тебе доступны будущие прогнозы и безлимитное окружение.`;
+      const tier = currentProfile.tier || "sub";
+      if (tier === "unl") {
+        subStatus.textContent = `Безлимитная подписка активна до ${endDateRu}. Тебе доступны: прогноз дня, безлимит вопросов боту, безлимит человек в окружении.`;
+      } else {
+        subStatus.textContent = `Подписка активна до ${endDateRu}. Тебе доступны: прогноз дня (включая будущие), 3 вопроса боту в день, до 15 человек в окружении.`;
+      }
     } else {
-      subStatus.textContent = "Подписка не активна. Подключи Премиум подписку €8,99/мес — получишь прогноз дня, 3 вопроса боту в день и окружение без лимита.";
+      subStatus.textContent = "Подписка не активна. Подключи Премиум подписку от €7,99/мес — получишь прогноз дня, вопросы боту через твой Дизайн и расширенное окружение.";
     }
 
     // История покупок — пока пустая, подключим в следующих шагах
@@ -2187,18 +2287,38 @@
     premium: {
       icon: "✦",
       title: "Премиум подписка",
-      price: "€8,99",
+      price: "от €7,99",
       interval: "/мес",
-      for: "Для тех, кто живёт со своим Дизайном каждый день, а не вспоминает о нём раз в полгода. Подписка собирает всё, чем пользуются регулярно: утренний прогноз, ежедневные вопросы боту и расширенный круг близких в твоём кабинете.",
+      for: "Для тех, кто живёт со своим Дизайном каждый день, а не вспоминает о нём раз в полгода. Подписка собирает всё, чем пользуются регулярно: утренний прогноз, вопросы боту и расширенный круг близких в твоём кабинете.",
       inside: [
         "Персональный прогноз дня — приходит каждое утро в твоём чате с ботом",
         "Доступ к прогнозам на будущие дни — на любую дату до конца подписки",
-        "3 вопроса боту каждый день — задаёшь любой вопрос про свою жизнь, отношения, работу, тело. Бот отвечает не общими словами, а через твой персональный бодиграф и сегодняшние транзиты планет. Это разбор именно для тебя.",
-        "Расширенное окружение: рассчитывай и сохраняй бодиграфы любых близких прямо в приложении — партнёра, детей, родителей, команды, друзей. Без ограничения по количеству. На бесплатном тарифе можно сохранить максимум 5 человек, с подпиской — сколько захочешь.",
+        "Вопросы боту через твой Дизайн и сегодняшние транзиты планет — ты задаёшь, бот отвечает не общими словами, а персонально под твою карту",
+        "Расширенное окружение: рассчитывай и сохраняй бодиграфы близких прямо в приложении — партнёра, детей, родителей, команды, друзей",
         "Можно отменить в любой момент — без обязательств",
       ],
-      result: "Каждое утро — твой персональный день в HD-оптике. Любой вопрос можно задать боту — он ответит через твой Дизайн и сегодняшние транзиты. И всегда под рукой — карты энергии всех близких. Дизайн становится привычкой, а не разовым событием.",
-      buy_label: "Подключить подписку · €8,99/мес",
+      tiers: [
+        {
+          name: "Подписка с вопросами",
+          price: "€7,99/мес",
+          features: [
+            "До 15 человек в окружении",
+            "3 вопроса боту в день",
+            "Прогноз дня каждое утро + доступ к будущим прогнозам",
+          ],
+        },
+        {
+          name: "Безлимитная подписка",
+          price: "€20/мес",
+          features: [
+            "Безлимит человек в окружении",
+            "Безлимит вопросов боту",
+            "Прогноз дня каждое утро + доступ к будущим прогнозам",
+          ],
+        },
+      ],
+      result: "Каждое утро — твой персональный день в HD-оптике. Вопросы можно задавать боту, он отвечает через твой Дизайн и сегодняшние транзиты. И всегда под рукой — карты энергии всех близких. Дизайн становится привычкой, а не разовым событием.",
+      buy_label: "Выбрать подписку",
     },
   };
   // Маппинг экрана на активную вкладку нижней навигации
@@ -2598,8 +2718,9 @@
   function renderEnvList(data) {
     const items = data.items || [];
     const count = data.count ?? items.length;
-    const limit = data.limit ?? 5;
-    const isPremium = !!data.is_premium;
+    const limit = data.limit;             // null = безлимит
+    const tier = data.tier || "free";     // 'free' | 'sub' | 'unl'
+    const isUnlimited = (limit === null || tier === "unl");
 
     const list = document.getElementById("env-list");
     const loading = document.getElementById("env-loading");
@@ -2613,25 +2734,34 @@
 
     // Счётчик квоты
     quota.style.display = "";
-    if (isPremium) {
+    if (isUnlimited) {
       quota.classList.add("unlimited");
       quota.replaceChildren(
-        document.createTextNode(`Сохранено: `),
+        document.createTextNode("Сохранено: "),
         Object.assign(document.createElement("span"), { className: "count", textContent: `${count} · Безлимит` })
       );
     } else {
       quota.classList.remove("unlimited");
       quota.replaceChildren(
-        document.createTextNode(`Сохранено: `),
+        document.createTextNode("Сохранено: "),
         Object.assign(document.createElement("span"), { className: "count", textContent: `${count} из ${limit}` })
       );
     }
 
-    // Лимит достигнут? → меняем кнопку на промо
-    const atLimit = !isPremium && count >= limit;
+    // Лимит достигнут? Текст апсела — разный для free и sub.
+    const atLimit = !isUnlimited && limit !== null && count >= limit;
     if (atLimit) {
       actions.style.display = "none";
       upsell.style.display = "";
+      const upsellTitle = upsell.querySelector("h3");
+      const upsellText = upsell.querySelector("p");
+      if (tier === "sub") {
+        upsellTitle.innerHTML = 'Безлимитная подписка · <span class="price">€20/мес</span>';
+        upsellText.textContent = "Ты заполнила 15 мест по своей подписке. Перейди на безлимит — сохраняй сколько угодно бодиграфов и задавай боту любое количество вопросов в день.";
+      } else {
+        upsellTitle.innerHTML = 'Премиум подписка · <span class="price">от €7,99/мес</span>';
+        upsellText.textContent = "Ты заполнила бесплатные 5 мест. Подключи подписку — будет до 15 человек, прогноз дня и 3 вопроса боту в день. Или сразу безлимит — без ограничений.";
+      }
     } else {
       actions.style.display = "";
       upsell.style.display = "none";
