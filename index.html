@@ -1928,17 +1928,58 @@
     showScreen("screen-product");
   }
 
-  // Кнопка «Купить» — пока ведёт в чат с @katrin_lopukhina
-  // (когда подключим Telegram Payments — заменится на реальную оплату)
+  // Кнопка «Купить» — бот сам присылает сообщение с тарифами/инструкциями.
+  // Для Premium — кнопки всех 6 тарифов (sub × 3 + unl × 3) с реальными callback'ами.
+  // Для остальных продуктов — текст «напиши слово X для оплаты».
   document.getElementById("btn-buy-product").addEventListener("click", () => {
     const p = PRODUCTS[currentProductId];
-    if (!p) return;
-    if (tg && tg.openTelegramLink) {
-      tg.openTelegramLink("https://t.me/katrin_lopukhina");
+    if (!p || !currentProductId) return;
+
+    if (!tg || !tg.initData) {
+      alert("Открой через Telegram, чтобы оформить");
+      return;
+    }
+
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
+
+    const message = "Сейчас откроется чат с ботом — там я пришлю тебе сообщение с тарифами и кнопками для оформления.";
+    if (tg.showPopup) {
+      tg.showPopup({
+        title: "Оформление",
+        message: message,
+        buttons: [
+          { id: "ok", type: "default", text: "Открыть чат" },
+          { id: "cancel", type: "cancel" },
+        ],
+      }, async (btnId) => {
+        if (btnId !== "ok") return;
+        await sendBuyPromptAndClose(currentProductId);
+      });
     } else {
-      window.open("https://t.me/katrin_lopukhina", "_blank");
+      if (confirm(message + "\n\nОткрыть чат?")) sendBuyPromptAndClose(currentProductId);
     }
   });
+
+  async function sendBuyPromptAndClose(productId) {
+    try {
+      const res = await fetch(`${API_URL}/buy-prompt`, {
+        method: "POST",
+        headers: FETCH_HEADERS,
+        body: JSON.stringify({
+          init_data: tg.initData,
+          product_id: productId,
+        }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        if (tg.showAlert) tg.showAlert("Ошибка: " + (errBody.detail || res.status));
+        return;
+      }
+      if (tg.close) tg.close();
+    } catch (e) {
+      if (tg.showAlert) tg.showAlert("Сервер недоступен. Попробуй ещё раз позже.");
+    }
+  }
 
   // ── Кнопка «Поделиться» ───────────────────────────────────────────────────────
   document.getElementById("btn-share").addEventListener("click", () => {
