@@ -1042,16 +1042,8 @@
 
 <div class="phone-frame">
 
-  <div class="tg-header">
-    <div class="left">
-      <div class="avatar">✦</div>
-      <div>
-        <div class="title">Human Design</div>
-        <div class="subtitle">Мини-приложение</div>
-      </div>
-    </div>
-    <button class="close">Закрыть</button>
-  </div>
+  <!-- Своя шапка убрана — используем нативную шапку Telegram, она и так
+       показывает «Human Design · mini app» + кнопку «Закрыть» -->
 
   <div class="content">
 
@@ -1607,11 +1599,8 @@
     tg.ready();
     tg.expand();
     tg.disableVerticalSwipes && tg.disableVerticalSwipes();
-
-    // Полный экран — для Telegram 8.0+ (без серой полоски Telegram сверху)
-    if (tg.requestFullscreen && tg.isVersionAtLeast && tg.isVersionAtLeast("8.0")) {
-      try { tg.requestFullscreen(); } catch (e) {}
-    }
+    // requestFullscreen намеренно не вызываем — нативная шапка Telegram удобнее,
+    // чем плавающие кнопки оверлеем поверх нашего контента
   }
 
   // ── Обновляем карточку профиля по данным из /me ───────────────────────────────
