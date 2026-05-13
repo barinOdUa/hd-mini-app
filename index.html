@@ -1081,6 +1081,11 @@
       <div class="more" id="daily-more" style="display:none">Читать прогноз →</div>
     </div>
 
+    <!-- Быстрая кнопка «вопрос про день» — под карточкой прогноза -->
+    <button class="btn secondary" id="btn-ask-question-home" style="margin-top:10px">
+      💬 Задать вопрос про сегодняшний день
+    </button>
+
     <!-- Продукты -->
     <div class="section-title">Глубже узнать себя</div>
     <div class="products">
@@ -1988,18 +1993,19 @@
     });
   }
 
-  // Кнопка «Задать вопрос боту»
-  document.getElementById("btn-ask-question").addEventListener("click", () => {
+  // Универсальный хелпер — открытие чата для вопроса. Используется в нескольких местах.
+  function openAskQuestionFlow(contextLabel = "") {
     const hasSub = currentProfile && currentProfile.subscription && currentProfile.subscription.is_active;
 
     if (!hasSub) {
-      // Нет подписки — показываем модалку Premium
       showBuyEnvModal();
       return;
     }
 
-    // Есть подписка — объясняем, как задать вопрос, и закрываем Mini App
-    const message = "Сейчас закроется приложение и ты окажешься в чате с ботом. Просто напиши свой вопрос — бот ответит через твой Дизайн и сегодняшние транзиты планет.\n\nДоступно 3 вопроса в день.";
+    const intro = contextLabel
+      ? `Сейчас закроется приложение и ты окажешься в чате с ботом. Напиши свой вопрос ${contextLabel} — бот ответит через твой Дизайн и сегодняшние транзиты планет.`
+      : "Сейчас закроется приложение и ты окажешься в чате с ботом. Просто напиши свой вопрос — бот ответит через твой Дизайн и сегодняшние транзиты планет.";
+    const message = intro + "\n\nДоступно 3 вопроса в день.";
 
     if (tg && tg.showPopup) {
       tg.showPopup({
@@ -2013,9 +2019,19 @@
         if (btnId === "ok" && tg.close) tg.close();
       });
     } else if (tg && tg.close) {
-      // Fallback для старых версий Telegram без showPopup
       if (confirm(message + "\n\nОткрыть чат сейчас?")) tg.close();
     }
+  }
+
+  // Кнопка на экране прогноза — общий вопрос
+  document.getElementById("btn-ask-question").addEventListener("click", () => {
+    openAskQuestionFlow();
+  });
+
+  // Кнопка под карточкой прогноза на главной — вопрос про сегодняшний день
+  document.getElementById("btn-ask-question-home").addEventListener("click", (e) => {
+    e.stopPropagation();  // чтоб не сработал клик по daily-card
+    openAskQuestionFlow("про сегодняшний день");
   });
 
   // Кнопка «Прогноз за другой день» — показываем нативный date picker
