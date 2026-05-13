@@ -987,8 +987,8 @@
     <!-- Прогноз дня (загружается реальный из /forecast) -->
     <div class="section-title">Прогноз на сегодня</div>
     <div class="daily" id="daily-card">
-      <div class="date" id="daily-date">…</div>
-      <div class="quote" id="daily-quote">Загружаем твой прогноз…</div>
+      <div class="date" id="daily-date">&nbsp;</div>
+      <div class="quote" id="daily-quote">Слушаю транзиты для тебя…</div>
       <div class="more" id="daily-more" style="display:none">Читать прогноз →</div>
     </div>
 
@@ -1497,10 +1497,46 @@
 
   function makePreview(fullText) {
     if (!fullText) return "";
-    // Берём первый абзац и обрезаем до ~140 символов на словах
-    const firstPara = fullText.split(/\n\n+/)[0].trim();
-    if (firstPara.length <= 160) return firstPara;
-    const cut = firstPara.slice(0, 160);
+
+    // Чистим декоративные тире и шапку с типом (она уже есть в карточке профиля)
+    const cleaned = fullText
+      .replace(/^[─━—]{3,}.*$/gm, "")
+      .replace(/[─━—]{6,}/g, "")
+      .replace(/^.*?(Твой день|🌅).*$/m, "")  // строка-заголовок прогноза
+      .trim();
+
+    // Разбиваем на предложения с сохранением знаков
+    const sentences = (cleaned.match(/[^.!?…\n]+[.!?…]+/g) || [])
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    // 1. Вопросы — самое цепкое. Берём короткий, ближе к концу
+    const questions = sentences.filter(s =>
+      s.endsWith("?") && s.length >= 40 && s.length <= 200
+    );
+    if (questions.length > 0) {
+      return questions[questions.length - 1];
+    }
+
+    // 2. Последнее короткое предложение из последнего абзаца — обычно самое сильное
+    const paragraphs = cleaned.split(/\n\n+/).filter(p => p.trim());
+    if (paragraphs.length > 0) {
+      const lastPara = paragraphs[paragraphs.length - 1];
+      const lastSentences = (lastPara.match(/[^.!?…\n]+[.!?…]+/g) || [])
+        .map(s => s.trim())
+        .filter(s => s.length >= 40 && s.length <= 200);
+      if (lastSentences.length > 0) {
+        return lastSentences[lastSentences.length - 1];
+      }
+    }
+
+    // 3. Fallback — первое подходящее предложение из всего текста
+    const candidate = sentences.find(s => s.length >= 40 && s.length <= 200);
+    if (candidate) return candidate;
+
+    // 4. Совсем последний рубеж — обрезка по словам
+    if (cleaned.length <= 160) return cleaned;
+    const cut = cleaned.slice(0, 160);
     const lastSpace = cut.lastIndexOf(" ");
     return (lastSpace > 100 ? cut.slice(0, lastSpace) : cut) + "…";
   }
