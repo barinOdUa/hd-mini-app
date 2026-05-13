@@ -1994,7 +1994,7 @@
   }
 
   // Универсальный хелпер — открытие чата для вопроса. Используется в нескольких местах.
-  function openAskQuestionFlow(contextLabel = "") {
+  async function openAskQuestionFlow(contextLabel = "") {
     const hasSub = currentProfile && currentProfile.subscription && currentProfile.subscription.is_active;
 
     if (!hasSub) {
@@ -2002,24 +2002,39 @@
       return;
     }
 
-    const intro = contextLabel
-      ? `Сейчас закроется приложение и ты окажешься в чате с ботом. Напиши свой вопрос ${contextLabel} — бот ответит через твой Дизайн и сегодняшние транзиты планет.`
-      : "Сейчас закроется приложение и ты окажешься в чате с ботом. Просто напиши свой вопрос — бот ответит через твой Дизайн и сегодняшние транзиты планет.";
-    const message = intro + "\n\nДоступно 3 вопроса в день.";
+    if (!tg || !tg.initData) {
+      // Демо-режим — нет реального чата
+      alert("Открой в Telegram, чтобы задать вопрос боту");
+      return;
+    }
 
-    if (tg && tg.showPopup) {
-      tg.showPopup({
-        title: "Задать вопрос боту",
-        message: message,
-        buttons: [
-          { id: "ok", type: "default", text: "Открыть чат" },
-          { id: "cancel", type: "cancel" },
-        ],
-      }, (btnId) => {
-        if (btnId === "ok" && tg.close) tg.close();
+    // Тактильный отклик — кнопка нажата
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
+
+    try {
+      const res = await fetch(`${API_URL}/ask-prompt`, {
+        method: "POST",
+        headers: FETCH_HEADERS,
+        body: JSON.stringify({
+          init_data: tg.initData,
+          context: contextLabel || null,
+        }),
       });
-    } else if (tg && tg.close) {
-      if (confirm(message + "\n\nОткрыть чат сейчас?")) tg.close();
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        if (res.status === 402) {
+          showBuyEnvModal();
+          return;
+        }
+        if (tg.showAlert) tg.showAlert("Не удалось отправить приглашение: " + (errBody.detail || res.status));
+        return;
+      }
+
+      // Сообщение от бота отправлено — закрываем Mini App, юзер увидит приглашение в чате
+      if (tg.close) tg.close();
+    } catch (e) {
+      if (tg.showAlert) tg.showAlert("Сервер недоступен. Попробуй ещё раз позже.");
     }
   }
 
