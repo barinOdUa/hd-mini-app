@@ -1563,9 +1563,8 @@
 </div>
 
 <script>
-  // ── URL бэкенда (поменять на свой стабильный когда настроим named tunnel) ─────
-  // Стабильный URL ngrok free static domain — больше не меняется при рестарте
-  const API_URL = "https://plop-blog-mummify.ngrok-free.dev";
+  // ── URL бэкенда: prod API на VPS (через Caddy + Let's Encrypt) ────────────────
+  const API_URL = "https://hd-api.youspeak.life";
 
   // Хедер для пропуска ngrok-интерстициала (предупреждения для бесплатного тарифа)
   const FETCH_HEADERS = {
