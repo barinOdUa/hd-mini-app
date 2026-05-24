@@ -1935,6 +1935,30 @@
     document.getElementById("btn-buy-product").textContent = p.buy_label || `Купить за ${p.price}`;
 
     showScreen("screen-product");
+
+    // Для продуктов с контентом в Mini App — проверяем, нет ли уже оплаченной
+    // неиспользованной покупки. Если есть, заменяем кнопку «Купить» на «Открыть».
+    const MINIAPP_DELIVERED_CHECK = { "energy_card": "card_energy" };
+    if (MINIAPP_DELIVERED_CHECK[productId] && tg && tg.initData) {
+      checkUnconsumedAndUpdateButton(MINIAPP_DELIVERED_CHECK[productId]);
+    }
+  }
+
+  async function checkUnconsumedAndUpdateButton(productCode) {
+    try {
+      const res = await fetch(`${API_URL}/payments/last-unconsumed`, {
+        method: "POST",
+        headers: FETCH_HEADERS,
+        body: JSON.stringify({ init_data: tg.initData, product_code: productCode }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.has_unconsumed && data.payment_id) {
+        const btn = document.getElementById("btn-buy-product");
+        btn.textContent = "✨ Открыть купленное";
+        btn.dataset.paidPaymentId = data.payment_id;
+      }
+    } catch (_) {}
   }
 
   // Кнопка «Купить» — бот сам присылает сообщение с тарифами/инструкциями.
@@ -1946,6 +1970,14 @@
 
     if (!tg || !tg.initData) {
       alert("Открой через Telegram, чтобы оформить");
+      return;
+    }
+
+    // Если на кнопке стоит маркер уже-оплаченной покупки — открываем контент
+    const paidId = document.getElementById("btn-buy-product").dataset.paidPaymentId;
+    if (paidId) {
+      if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
+      showPaidContentByPaymentId(parseInt(paidId, 10));
       return;
     }
 
