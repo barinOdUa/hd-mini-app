@@ -2083,43 +2083,27 @@
 
   // ── После оплаты: показываем контент в Mini App ─────────────────────────────
   async function renderPaidHtml(paymentId) {
-    // Открываем HTML в Telegram in-app browser через tg.openLink — div+DOMParser
-    // не работает (стили шаблона на 800px не помещаются, iframe блокируется CSP).
-    // Контент откроется как полноценная страница в новой вкладке Telegram-браузера.
-    const url = `${API_URL}/payments/view/${paymentId}?init_data=${encodeURIComponent(tg.initData)}`;
-    if (tg && tg.openLink) {
-      tg.openLink(url);
-    } else {
-      window.open(url, "_blank");
-    }
-    // Показываем приятный экран в Mini App с инструкцией
+    // Fetch HTML текстом и вставляем в div через DOMParser (безопаснее innerHTML).
+    // Используем div вместо iframe — в Telegram in-app browser iframe может
+    // блокироваться CSP и быть невидимым.
     const loading = document.getElementById("paid-loading");
     const errBox = document.getElementById("paid-error");
     const container = document.getElementById("paid-html");
-    loading.style.display = "none";
-    errBox.style.display = "none";
-    container.style.display = "block";
-    container.replaceChildren();
-    const wrap = document.createElement("div");
-    wrap.style.cssText = "padding: 60px 24px; text-align: center; color: #cfc8ea; min-height: 60vh;";
-    const icon = document.createElement("div");
-    icon.style.cssText = "font-size: 64px; margin-bottom: 24px;";
-    icon.textContent = "⚡";
-    const title = document.createElement("div");
-    title.style.cssText = "font-size: 22px; font-weight: 500; margin-bottom: 16px; color: #fff;";
-    title.textContent = "Энергетический Потенциал";
-    const text = document.createElement("div");
-    text.style.cssText = "font-size: 15px; line-height: 1.6; opacity: 0.8; margin-bottom: 32px;";
-    text.textContent = "Открыл для тебя в браузере. Если страница не открылась — жми кнопку ниже.";
-    const btn = document.createElement("button");
-    btn.className = "btn";
-    btn.textContent = "📖 Открыть снова";
-    btn.onclick = () => { if (tg && tg.openLink) tg.openLink(url); else window.open(url); };
-    wrap.appendChild(icon);
-    wrap.appendChild(title);
-    wrap.appendChild(text);
-    wrap.appendChild(btn);
-    container.appendChild(wrap);
+    try {
+      const res = await fetch(`${API_URL}/payments/view/${paymentId}?init_data=${encodeURIComponent(tg.initData)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const htmlText = await res.text();
+      const parsed = new DOMParser().parseFromString(htmlText, "text/html");
+      container.replaceChildren();
+      parsed.head.querySelectorAll("style, link").forEach(n => container.appendChild(n.cloneNode(true)));
+      Array.from(parsed.body.childNodes).forEach(n => container.appendChild(n.cloneNode(true)));
+      loading.style.display = "none";
+      container.style.display = "block";
+    } catch (e) {
+      loading.style.display = "none";
+      errBox.style.display = "block";
+      errBox.innerText = "Не удалось загрузить контент: " + e.message;
+    }
   }
 
   async function showPaidContent(stripeSessionId) {
