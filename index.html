@@ -2027,6 +2027,9 @@
         return;
       }
       const data = await res.json();
+      // Сохраняем session_id чтобы достать после возврата
+      // (Telegram start_param режется до 64 chars, а Stripe session_id ~66 — не помещается)
+      try { localStorage.setItem("hd_last_stripe_session", data.session_id); } catch (_) {}
       // Открываем Stripe в Telegram in-app browser
       if (tg.openLink) {
         tg.openLink(data.url);
@@ -2203,8 +2206,20 @@
       // Если в URL есть ?paid=PAYMENT_ID — открываем экран оплаченного контента
       const paidId = params.get("paid");
       if (paidId) return showPaidContentByPaymentId(parseInt(paidId, 10));
+      // Возврат после Stripe Checkout — берём session_id из localStorage
+      if (target === "paid") {
+        try {
+          const sid = localStorage.getItem("hd_last_stripe_session");
+          if (sid) {
+            localStorage.removeItem("hd_last_stripe_session");
+            return showPaidContent(sid);
+          }
+        } catch (_) {}
+        // Если по какой-то причине нет в localStorage — просто остаёмся на главной
+        return;
+      }
       if (!target) return;
-      // Stripe session_id начинается с cs_ — это возврат после оплаты
+      // Stripe session_id начинается с cs_ (legacy путь, если попали по старой ссылке)
       if (target.startsWith("cs_")) return showPaidContent(target);
       // Спец-значения для навигации
       if (target === "environment") return showScreen("screen-environment");
