@@ -2125,10 +2125,11 @@
         throw new Error(eb.detail || contentRes.status);
       }
       const data = await contentRes.json();
-      // 3. Отображаем HTML через iframe srcdoc (изоляция стилей)
+      // 3. Отображаем HTML через blob URL (srcdoc не справляется с >1MB)
       loading.style.display = "none";
       frame.style.display = "block";
-      frame.srcdoc = data.html;
+      const blob = new Blob([data.html], { type: "text/html;charset=utf-8" });
+      frame.src = URL.createObjectURL(blob);
     } catch (e) {
       loading.style.display = "none";
       errBox.style.display = "block";
@@ -2293,7 +2294,8 @@
       const data = await res.json();
       loading.style.display = "none";
       frame.style.display = "block";
-      frame.srcdoc = data.html;
+      const blob = new Blob([data.html], { type: "text/html;charset=utf-8" });
+      frame.src = URL.createObjectURL(blob);
     } catch (e) {
       loading.style.display = "none";
       errBox.style.display = "block";
