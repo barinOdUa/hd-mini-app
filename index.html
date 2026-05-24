@@ -1944,12 +1944,9 @@
 
     showScreen("screen-product");
 
-    // Для продуктов с контентом в Mini App — проверяем, нет ли уже оплаченной
-    // неиспользованной покупки. Если есть, заменяем кнопку «Купить» на «Открыть».
-    const MINIAPP_DELIVERED_CHECK = { "energy_card": "card_energy" };
-    if (MINIAPP_DELIVERED_CHECK[productId] && tg && tg.initData) {
-      checkUnconsumedAndUpdateButton(MINIAPP_DELIVERED_CHECK[productId]);
-    }
+    // Контент всех продуктов отдаётся в чате бота (PDF / квиз / разбор).
+    // Mini App не делает view контента — попытка показать в нём оказалась
+    // слишком хрупкой (Telegram CSP, DOM limits, кросс-платформенность).
   }
 
   async function checkUnconsumedAndUpdateButton(productCode) {
@@ -1981,23 +1978,7 @@
       return;
     }
 
-    // Если на кнопке стоит маркер уже-оплаченной покупки — открываем контент
-    const paidId = document.getElementById("btn-buy-product").dataset.paidPaymentId;
-    if (paidId) {
-      if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
-      showPaidContentByPaymentId(parseInt(paidId, 10));
-      return;
-    }
-
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
-
-    // Для продуктов с контентом в Mini App — сразу открываем Stripe Checkout,
-    // без промежуточного диалога «откроется чат» (чат не откроется — оплата прямо тут).
-    const MINIAPP_DELIVERED_INTRO = new Set(["energy_card"]);
-    if (MINIAPP_DELIVERED_INTRO.has(currentProductId)) {
-      sendBuyPromptAndClose(currentProductId);
-      return;
-    }
 
     const message = "Сейчас откроется чат с ботом — там я пришлю тебе сообщение с тарифами и кнопками для оформления.";
     if (tg.showPopup) {
@@ -2018,13 +1999,8 @@
   });
 
   async function sendBuyPromptAndClose(productId) {
-    // Для продуктов с контентом в Mini App — открываем Stripe Checkout прямо
-    // и после оплаты юзер возвращается в Mini App, видит контент тут же.
-    const MINIAPP_DELIVERED = new Set(["energy_card"]);
-    if (MINIAPP_DELIVERED.has(productId)) {
-      return openStripeCheckoutDirect(productId);
-    }
-    // Остальные продукты — через бот (старый flow, бот шлёт кнопку оплаты в чат)
+    // Все продукты идут через бот: бот шлёт сообщение с кнопкой оплаты в чат,
+    // юзер кликает → Stripe → после оплаты возврат в чат + кнопка получения продукта.
     try {
       const res = await fetch(`${API_URL}/buy-prompt`, {
         method: "POST",
