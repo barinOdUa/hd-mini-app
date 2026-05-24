@@ -1940,6 +1940,14 @@
 
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
 
+    // Для продуктов с контентом в Mini App — сразу открываем Stripe Checkout,
+    // без промежуточного диалога «откроется чат» (чат не откроется — оплата прямо тут).
+    const MINIAPP_DELIVERED_INTRO = new Set(["energy_card"]);
+    if (MINIAPP_DELIVERED_INTRO.has(currentProductId)) {
+      sendBuyPromptAndClose(currentProductId);
+      return;
+    }
+
     const message = "Сейчас откроется чат с ботом — там я пришлю тебе сообщение с тарифами и кнопками для оформления.";
     if (tg.showPopup) {
       tg.showPopup({
