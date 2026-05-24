@@ -1563,8 +1563,9 @@
 </div>
 
 <script>
-  // ── URL бэкенда: prod API на VPS (через Caddy + Let's Encrypt) ────────────────
-  const API_URL = "https://hd-api.youspeak.life";
+  // ── URL бэкенда (поменять на свой стабильный когда настроим named tunnel) ─────
+  // Стабильный URL ngrok free static domain — больше не меняется при рестарте
+  const API_URL = "https://plop-blog-mummify.ngrok-free.dev";
 
   // Хедер для пропуска ngrok-интерстициала (предупреждения для бесплатного тарифа)
   const FETCH_HEADERS = {
@@ -1765,35 +1766,18 @@
   function makePreview(fullText) {
     if (!fullText || typeof fullText !== "string") return "";
 
-    // 1. ОСНОВНОЕ: ищем закрывающий блок 💡 (мысль дня / вопрос дня / практика).
-    // Формат: строка "💡 {эмодзи} {заголовок}" → следующие строки до ━━━ или конца — это контент.
-    const allLines = fullText.split("\n");
-    const bulbIdx = allLines.findIndex(ln => /^\s*💡/.test(ln));
-    if (bulbIdx !== -1) {
-      const bodyLines = [];
-      for (let i = bulbIdx + 1; i < allLines.length; i++) {
-        const t = allLines[i].trim();
-        if (!t) {
-          // пустая строка — если ещё ничего не набрали, продолжаем; иначе стоп
-          if (bodyLines.length === 0) continue;
-          break;
-        }
-        if (/^[─━—\-]{3,}/.test(t)) break;     // разделитель — конец блока
-        bodyLines.push(t);
-      }
-      const bulbContent = bodyLines.join(" ").trim();
-      if (bulbContent.length >= 20) return bulbContent;
-    }
-
-    // FALLBACK: если блок 💡 не найден — старая логика поиска цепкого предложения.
+    // Чистим текст построчно: убираем разделители и дубль заголовка.
+    // Короткие подзаголовки секций (✨ Тема дня, 🌿 Вопрос дня, 💼 Работа...) ОСТАВЛЯЕМ,
+    // но добавляем «:» в конец, чтобы они логично соединялись с содержимым.
     const lines = fullText.split("\n");
     const cleanLines = [];
     for (const ln of lines) {
       const t = ln.trim();
       if (!t) { cleanLines.push(""); continue; }
-      if (/^[─━—\-]{3,}/.test(t)) continue;
-      if (/^🌅/.test(t)) continue;
-      if (/^Твой день[,:]?\s/.test(t)) continue;
+      if (/^[─━—\-]{3,}/.test(t)) continue;                  // декоративные ────
+      if (/^🌅/.test(t)) continue;                            // дата с восходом
+      if (/^Твой день[,:]?\s/.test(t)) continue;              // дубль заголовка профиля
+      // Короткий заголовок без знака конца → добавляем «:»
       if (t.length < 40 && !/[.!?…:»"]$/.test(t)) {
         cleanLines.push(t + ":");
       } else {
@@ -1803,16 +1787,19 @@
     const cleaned = cleanLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
     if (!cleaned) return "";
 
+    // Извлекаем все предложения
     const sentenceRegex = /[^.!?…]+[.!?…]+/g;
     const sentences = (cleaned.match(sentenceRegex) || [])
       .map(s => s.trim())
       .filter(s => s.length > 0);
 
+    // 1. Цепкий вопрос
     const goodQuestion = sentences.find(s =>
       s.endsWith("?") && s.length >= 30 && s.length <= 200
     );
     if (goodQuestion) return goodQuestion;
 
+    // 2. Последнее предложение из последнего абзаца
     const paragraphs = cleaned.split(/\n\n+/).filter(p => p.trim());
     if (paragraphs.length > 0) {
       const lastPara = paragraphs[paragraphs.length - 1];
@@ -1822,9 +1809,11 @@
       if (lastSents.length > 0) return lastSents[lastSents.length - 1];
     }
 
+    // 3. Любое подходящее предложение
     const anyGood = sentences.find(s => s.length >= 30 && s.length <= 200);
     if (anyGood) return anyGood;
 
+    // 4. Обрезка по словам
     if (cleaned.length <= 160) return cleaned;
     const cut = cleaned.slice(0, 160);
     const lastSpace = cut.lastIndexOf(" ");
@@ -2076,6 +2065,31 @@
   // Запускаем загрузку превью прогноза ПОСЛЕ объявления всех зависимостей выше
   // (MONTHS_RU, WEEKDAYS_RU, fetchForecast, makePreview, todayIso, formatDateShort)
   loadTodayForecastPreview();
+
+  // ── Deep links: если Mini App открыт с ?product=ID — сразу открываем продукт ──
+  // Используется когда юзер кликает кнопку продукта в боте → попадает не на главную,
+  // а сразу на нужный экран. URL вида: https://...github.io/hd-mini-app/?product=full_reading
+  function handleStartParams() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      let target = params.get("product");
+      // Также пробуем tg.initDataUnsafe.start_param на случай если URL без query
+      if (!target && tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+        target = tg.initDataUnsafe.start_param;
+      }
+      if (!target) return;
+      // Спец-значения для навигации
+      if (target === "environment") return showScreen("screen-environment");
+      if (target === "forecast") return openForecast(todayIso());
+      if (target === "profile") return openProfileScreen();
+      // Иначе — это id продукта
+      if (PRODUCTS[target]) openProductDetail(target);
+    } catch (e) {
+      // Молча игнорируем — стартовые параметры не критичны
+    }
+  }
+  // Откладываем на 0мс — чтобы все const-объявления ниже (PRODUCTS и т.п.) успели произойти
+  setTimeout(handleStartParams, 0);
 
   async function openForecast(dateIso) {
     showScreen("screen-forecast");
