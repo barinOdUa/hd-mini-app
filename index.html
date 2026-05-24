@@ -1530,6 +1530,17 @@
   </div>
   <!-- /screen-product -->
 
+  <!-- ─── Оплаченный контент (Энергетический Потенциал и т.п.) ──────────── -->
+  <div class="screen" id="screen-paid-content">
+    <button class="back-link" data-back-to="screen-home">‹ К главной</button>
+    <div id="paid-loading" style="text-align:center; padding:48px 16px; color:#cfc8ea">
+      ✨ Готовлю твой контент…
+    </div>
+    <div id="paid-error" style="display:none; padding:24px 16px; color:#ff9090; text-align:center"></div>
+    <iframe id="paid-frame" style="display:none; width:100%; height:calc(100vh - 60px); border:0; background:#0a0214"></iframe>
+  </div>
+  <!-- /screen-paid-content -->
+
   <!-- ─── МОДАЛКА: подписка Premium ───────────────────────────────────── -->
   <div class="modal-backdrop" id="modal-buy-env">
     <div class="modal">
@@ -1948,6 +1959,13 @@
   });
 
   async function sendBuyPromptAndClose(productId) {
+    // Для продуктов с контентом в Mini App — открываем Stripe Checkout прямо
+    // и после оплаты юзер возвращается в Mini App, видит контент тут же.
+    const MINIAPP_DELIVERED = new Set(["energy_card"]);
+    if (MINIAPP_DELIVERED.has(productId)) {
+      return openStripeCheckoutDirect(productId);
+    }
+    // Остальные продукты — через бот (старый flow, бот шлёт кнопку оплаты в чат)
     try {
       const res = await fetch(`${API_URL}/buy-prompt`, {
         method: "POST",
@@ -1965,6 +1983,94 @@
       if (tg.close) tg.close();
     } catch (e) {
       if (tg.showAlert) tg.showAlert("Сервер недоступен. Попробуй ещё раз позже.");
+    }
+  }
+
+  // Маппинг product_id из Mini App → product_code в нашем Stripe-каталоге
+  const MINIAPP_TO_STRIPE = {
+    "energy_card": "card_energy",
+  };
+
+  async function openStripeCheckoutDirect(productId) {
+    try {
+      const productCode = MINIAPP_TO_STRIPE[productId] || productId;
+      const res = await fetch(`${API_URL}/payments/create`, {
+        method: "POST",
+        headers: FETCH_HEADERS,
+        body: JSON.stringify({
+          init_data: tg.initData,
+          product_code: productCode,
+        }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        if (tg.showAlert) tg.showAlert("Ошибка: " + (errBody.detail || res.status));
+        return;
+      }
+      const data = await res.json();
+      // Открываем Stripe в Telegram in-app browser
+      if (tg.openLink) {
+        tg.openLink(data.url);
+      } else {
+        window.location.href = data.url;
+      }
+    } catch (e) {
+      if (tg.showAlert) tg.showAlert("Сервер недоступен. Попробуй ещё раз позже.");
+    }
+  }
+
+  // ── После оплаты: показываем контент в Mini App ─────────────────────────────
+  async function showPaidContent(stripeSessionId) {
+    showScreen("screen-paid-content");
+    const loading = document.getElementById("paid-loading");
+    const errBox = document.getElementById("paid-error");
+    const frame = document.getElementById("paid-frame");
+    loading.style.display = "block";
+    errBox.style.display = "none";
+    frame.style.display = "none";
+    try {
+      // 1. Проверяем статус оплаты
+      const statusRes = await fetch(`${API_URL}/payments/status`, {
+        method: "POST",
+        headers: FETCH_HEADERS,
+        body: JSON.stringify({
+          init_data: tg.initData,
+          stripe_session_id: stripeSessionId,
+        }),
+      });
+      if (!statusRes.ok) {
+        const eb = await statusRes.json().catch(() => ({}));
+        throw new Error(eb.detail || statusRes.status);
+      }
+      const status = await statusRes.json();
+      if (status.status !== "succeeded") {
+        loading.style.display = "none";
+        errBox.style.display = "block";
+        errBox.innerText = `Платёж ещё не подтверждён (статус: ${status.status}). Подожди пару секунд и обнови экран.`;
+        return;
+      }
+      // 2. Запрашиваем контент
+      const contentRes = await fetch(`${API_URL}/payments/content`, {
+        method: "POST",
+        headers: FETCH_HEADERS,
+        body: JSON.stringify({
+          init_data: tg.initData,
+          payment_id: status.payment_id,
+        }),
+      });
+      if (!contentRes.ok) {
+        const eb = await contentRes.json().catch(() => ({}));
+        throw new Error(eb.detail || contentRes.status);
+      }
+      const data = await contentRes.json();
+      // 3. Отображаем HTML через iframe srcdoc (изоляция стилей)
+      loading.style.display = "none";
+      frame.style.display = "block";
+      frame.srcdoc = data.html;
+    } catch (e) {
+      loading.style.display = "none";
+      errBox.style.display = "block";
+      errBox.innerText = "Не удалось загрузить контент: " + e.message;
     }
   }
 
@@ -2075,7 +2181,12 @@
       if (!target && tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
         target = tg.initDataUnsafe.start_param;
       }
+      // Если в URL есть ?paid=PAYMENT_ID — открываем экран оплаченного контента
+      const paidId = params.get("paid");
+      if (paidId) return showPaidContentByPaymentId(parseInt(paidId, 10));
       if (!target) return;
+      // Stripe session_id начинается с cs_ — это возврат после оплаты
+      if (target.startsWith("cs_")) return showPaidContent(target);
       // Спец-значения для навигации
       if (target === "environment") return showScreen("screen-environment");
       if (target === "forecast") return openForecast(todayIso());
@@ -2084,6 +2195,35 @@
       if (PRODUCTS[target]) openProductDetail(target);
     } catch (e) {
       // Молча игнорируем — стартовые параметры не критичны
+    }
+  }
+
+  async function showPaidContentByPaymentId(paymentId) {
+    showScreen("screen-paid-content");
+    const loading = document.getElementById("paid-loading");
+    const errBox = document.getElementById("paid-error");
+    const frame = document.getElementById("paid-frame");
+    loading.style.display = "block";
+    errBox.style.display = "none";
+    frame.style.display = "none";
+    try {
+      const res = await fetch(`${API_URL}/payments/content`, {
+        method: "POST",
+        headers: FETCH_HEADERS,
+        body: JSON.stringify({ init_data: tg.initData, payment_id: paymentId }),
+      });
+      if (!res.ok) {
+        const eb = await res.json().catch(() => ({}));
+        throw new Error(eb.detail || res.status);
+      }
+      const data = await res.json();
+      loading.style.display = "none";
+      frame.style.display = "block";
+      frame.srcdoc = data.html;
+    } catch (e) {
+      loading.style.display = "none";
+      errBox.style.display = "block";
+      errBox.innerText = "Не удалось загрузить контент: " + e.message;
     }
   }
   // Откладываем на 0мс — чтобы все const-объявления ниже (PRODUCTS и т.п.) успели произойти
