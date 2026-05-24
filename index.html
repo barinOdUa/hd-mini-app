@@ -1791,7 +1791,15 @@
         bodyLines.push(t);
       }
       const bulbContent = bodyLines.join(" ").trim();
-      if (bulbContent.length >= 20) return bulbContent;
+      if (bulbContent.length >= 20) {
+        // Safety cap: 220 символов с обрезкой по словам. Промпт даёт 180,
+        // но если AI вдруг сорвался, превью не должно распирать карточку.
+        const MAX = 220;
+        if (bulbContent.length <= MAX) return bulbContent;
+        const cut = bulbContent.slice(0, MAX);
+        const lastSpace = cut.lastIndexOf(" ");
+        return (lastSpace > 120 ? cut.slice(0, lastSpace) : cut).replace(/[,.;:—–-]+\s*$/, "") + "…";
+      }
     }
 
     // FALLBACK: если блок 💡 не найден — старая логика поиска цепкого предложения.
