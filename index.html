@@ -2124,12 +2124,10 @@
         const eb = await contentRes.json().catch(() => ({}));
         throw new Error(eb.detail || contentRes.status);
       }
-      const data = await contentRes.json();
-      // 3. Отображаем HTML через blob URL (srcdoc не справляется с >1MB)
+      // 3. Открываем GET-endpoint напрямую как iframe.src (надёжнее blob)
       loading.style.display = "none";
       frame.style.display = "block";
-      const blob = new Blob([data.html], { type: "text/html;charset=utf-8" });
-      frame.src = URL.createObjectURL(blob);
+      frame.src = `${API_URL}/payments/view/${status.payment_id}?init_data=${encodeURIComponent(tg.initData)}`;
     } catch (e) {
       loading.style.display = "none";
       errBox.style.display = "block";
@@ -2282,20 +2280,9 @@
     errBox.style.display = "none";
     frame.style.display = "none";
     try {
-      const res = await fetch(`${API_URL}/payments/content`, {
-        method: "POST",
-        headers: FETCH_HEADERS,
-        body: JSON.stringify({ init_data: tg.initData, payment_id: paymentId }),
-      });
-      if (!res.ok) {
-        const eb = await res.json().catch(() => ({}));
-        throw new Error(eb.detail || res.status);
-      }
-      const data = await res.json();
       loading.style.display = "none";
       frame.style.display = "block";
-      const blob = new Blob([data.html], { type: "text/html;charset=utf-8" });
-      frame.src = URL.createObjectURL(blob);
+      frame.src = `${API_URL}/payments/view/${paymentId}?init_data=${encodeURIComponent(tg.initData)}`;
     } catch (e) {
       loading.style.display = "none";
       errBox.style.display = "block";
